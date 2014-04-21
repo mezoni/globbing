@@ -12,6 +12,14 @@ class FileList extends Object with IterableMixin<String> {
       throw new ArgumentError("directory: $directory");
     }
 
+    if (files == null) {
+      throw new ArgumentError("files: $files");
+    }
+
+    if (_Utils.isWindows) {
+      files = files.replaceAll("\\", "/");
+    }
+
     _glob = new Glob(files);
   }
 
@@ -33,8 +41,6 @@ class FileList extends Object with IterableMixin<String> {
 }
 
 class _DirectoryLister {
-  static final bool _isWindows = Platform.isWindows;
-
   final Glob glob;
 
   List<String> _files;
@@ -55,7 +61,7 @@ class _DirectoryLister {
     if (segment.crossing) {
       _listRecursive(directory);
     } else {
-      if (glob.pattern.startsWith("/")) {
+      if (_Utils.isAbsolute(glob.pattern)) {
         _listAbsolute(directory);
       } else {
         _listRelative(directory, 0);
@@ -68,7 +74,7 @@ class _DirectoryLister {
   void _listAbsolute(Directory directory) {
     for (var entry in directory.listSync()) {
       var entryPath = entry.path;
-      if (_isWindows) {
+      if (_Utils.isWindows) {
         entryPath = entryPath.replaceAll("\\", "/");
       }
 
@@ -89,7 +95,7 @@ class _DirectoryLister {
   void _listRecursive(Directory directory) {
     for (var entry in directory.listSync()) {
       var entryPath = entry.path;
-      if (_isWindows) {
+      if (_Utils.isWindows) {
         entryPath = entryPath.replaceAll("\\", "/");
       }
 
@@ -111,7 +117,7 @@ class _DirectoryLister {
     var segment = _segments[level];
     for (var entry in directory.listSync()) {
       var entryPath = entry.path;
-      if (_isWindows) {
+      if (_Utils.isWindows) {
         entryPath = entryPath.replaceAll("\\", "/");
       }
 
@@ -142,5 +148,33 @@ class _DirectoryLister {
         }
       }
     }
+  }
+}
+
+class _Utils {
+  static final bool isWindows = Platform.isWindows;
+
+  static bool isAbsolute(String path) {
+    var result = false;
+    if (isWindows) {
+      if (path.length >= 3) {
+        var charCode = path.codeUnitAt(0);
+        if (charCode >= Ascii.A && charCode <= Ascii.Z || charCode >= Ascii.a &&
+            charCode <= Ascii.z) {
+          if (path.codeUnitAt(1) == Ascii.COLON) {
+            if (path.codeUnitAt(2) == Ascii.SLASH || path.codeUnitAt(2) ==
+                Ascii.BACKSLASH) {
+              result = true;
+            }
+          }
+        }
+      }
+    } else {
+      if (path.startsWith("/")) {
+        result = true;
+      }
+    }
+
+    return result;
   }
 }

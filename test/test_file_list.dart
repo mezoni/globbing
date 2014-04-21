@@ -18,6 +18,13 @@ void testAbsolute() {
 
   // Path "/home/user/dart/globbing"
   // Mask "/home/user/dart/globbing/lib/src/*.dart"
+
+  // Absolute mask on Windows should be corrected because the "\" character
+  // used as an escape character.
+  if (Platform.isWindows) {
+    mask = mask.replaceAll("\\", "/");
+  }
+
   var files = new FileList(new Directory(path), mask);
   var expected = ["file_list.dart", "globbing.dart"];
   var result = <String>[];
@@ -28,9 +35,16 @@ void testAbsolute() {
   result.sort((a, b) => a.compareTo(b));
   expect(result, expected, reason: mask);
 
-  // Path "/"
+  if (Platform.isWindows) {
+    // C:\
+    path = path.substring(0, 3);
+  } else {
+    // Path "/" on POSIX
+    path = "/";
+  }
+
   // Mask "/home/user/dart/globbing/lib/src/*.dart"
-  files = new FileList(new Directory("/"), mask);
+  files = new FileList(new Directory(path), mask);
   result = <String>[];
   for (var file in files) {
     result.add(pathos.basename(file));

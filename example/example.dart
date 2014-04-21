@@ -17,7 +17,7 @@ void main() {
     }
   }
 
-  // Find CHANGELOG's "pub cache"
+  // Find CHANGELOG's in "pub cache"
   if (pubCache != null) {
     var mask = "**/CHANGELOG*";
     var files = new FileList(new Directory(pubCache), mask);
@@ -31,7 +31,7 @@ void main() {
     }
   }
 
-  // Find packages with major version
+  // Find packages with major version (approximately)
   if (pubCache != null) {
     var mask = "**/*[1-9]*.[0-9]*.[0-9]*/pubspec.yaml";
     var files = new FileList(new Directory(pubCache), mask);
@@ -52,15 +52,17 @@ String getPubCachePath() {
     return result;
   }
 
-  String home;
   if (Platform.isWindows) {
-    home = Platform.environment["HOMEPATH"];
+    var appData = Platform.environment["APPDATA"];
+    if (appData != null) {
+      result = "$appData/Pub/Cache";
+    }
   } else {
-    home = Platform.environment["HOME"];
+    var home = Platform.environment["HOME"];
+    result = "$home/.pub-cache";
   }
 
-  if (home != null) {
-    result = "$home/.pub-cache";
+  if (result != null) {
     var dir = new Directory(result);
     if (dir.existsSync()) {
       return dir.path;

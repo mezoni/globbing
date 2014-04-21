@@ -1,5 +1,5 @@
 name: globbing
-version: 0.0.1
+version: 0.0.2
 author: Andrew Mezoni <andrew.mezoni@gmail.com>
 description: Globbing is a library for the pattern matching based on wildcard characters. Includes helper for a list of files.
 homepage: https://github.com/mezoni/globbing

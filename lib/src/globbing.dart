@@ -56,7 +56,7 @@ class Glob {
   }
 
   /**
-   * Returns the string represenation.
+   * Returns the string representation.
    */
   String toString() {
     return pattern;
@@ -117,7 +117,7 @@ class GlobSegment {
   }
 
   /**
-   * Returns the string represenation.
+   * Returns the string representation.
    */
   String toString() {
     return pattern;

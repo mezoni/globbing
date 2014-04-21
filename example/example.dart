@@ -1,11 +1,3 @@
-globbing
-========
-
-Globbing is a library for the pattern matching based on wildcard characters. Includes helper for a list of files.
-
-BETA VERSION
-
-```dart
 import "dart:io";
 import "package:globbing/file_list.dart";
 
@@ -77,4 +69,3 @@ String getPubCachePath() {
 
   return null;
 }
-```

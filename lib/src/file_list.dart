@@ -15,6 +15,9 @@ class FileList extends Object with IterableMixin<String> {
     _glob = new Glob(files);
   }
 
+  /**
+   * Returns the iterator.
+   */
   Iterator<String> get iterator {
     if (_files == null) {
       _files = _getFiles();

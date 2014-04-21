@@ -50,8 +50,9 @@ void testCrossing() {
   // Mask "**/unittest.dart"
   var files = new FileList(new Directory(path), mask);
   // "globbing/packages/unittest/unittest.dart"
+  // "globbing/example/packages/unittest/unittest.dart"
   // "globbing/test/packages/unittest/unittest.dart"
-  var expected = ["unittest.dart", "unittest.dart"];
+  var expected = ["unittest.dart", "unittest.dart", "unittest.dart"];
   var result = <String>[];
   for (var file in files) {
     result.add(pathos.basename(file));

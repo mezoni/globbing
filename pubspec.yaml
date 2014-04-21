@@ -2,6 +2,7 @@ name: globbing
 version: 0.0.1
 author: Andrew Mezoni <andrew.mezoni@gmail.com>
 description: Globbing is a library for the pattern matching based on wildcard characters. Includes helper for a list of files.
+homepage: https://github.com/mezoni/globbing
 dependencies:
   ascii: any
   lists: any

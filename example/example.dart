@@ -17,7 +17,7 @@ void main() {
     }
   }
 
-  // Find CHANGELOG's in "pub cache"
+  // Find "CHANGELOG" in "pub cache"
   if (pubCache != null) {
     var mask = "**/CHANGELOG*";
     var files = new FileList(new Directory(pubCache), mask);
@@ -31,14 +31,14 @@ void main() {
     }
   }
 
-  // Find packages with major version (approximately)
+  // Find executable files in "bin" folders
   if (pubCache != null) {
-    var mask = "**/*[1-9]*.[0-9]*.[0-9]*/pubspec.yaml";
+    var mask = "**/bin/*.dart";
     var files = new FileList(new Directory(pubCache), mask);
     if (!files.isEmpty) {
       var list = files.toList();
       var length = list.length;
-      print("Found $length packages with major version");
+      print("Found $length executable files in 'bin'");
       for (var file in files) {
         print(file);
       }
@@ -62,12 +62,5 @@ String getPubCachePath() {
     result = "$home/.pub-cache";
   }
 
-  if (result != null) {
-    var dir = new Directory(result);
-    if (dir.existsSync()) {
-      return dir.path;
-    }
-  }
-
-  return null;
+  return result;
 }

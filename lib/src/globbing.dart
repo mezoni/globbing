@@ -37,7 +37,7 @@ class Glob {
   }
 
   /**
-   * Returns the [GlobPath].
+   * Returns the pattern path.
    */
   GlobPath get globPath => _globPath;
 

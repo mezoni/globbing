@@ -74,15 +74,14 @@ class _DirectoryLister {
     }
 
     _globPath = new GlobPath(_basePath);
-    var globPath = glob.globPath;
-    var pattern = glob.pattern;
-    if (globPath.isAbsolute) {
+    var patternPath = glob.globPath;
+    if (patternPath.isAbsolute) {
       _offset = 0;
     } else {
       _offset = _basePath.length;
     }
 
-    if (globPath.isAbsolute) {
+    if (patternPath.isAbsolute) {
       if (glob.crossing) {
         _listAbsoluteWithCrossing(directory);
       } else {

@@ -7,20 +7,20 @@ class FileList extends Object with IterableMixin<String> {
 
   Glob _glob;
 
-  FileList(this.directory, String files) {
+  FileList(this.directory, String mask) {
     if (directory == null) {
       throw new ArgumentError("directory: $directory");
     }
 
-    if (files == null) {
-      throw new ArgumentError("files: $files");
+    if (mask == null) {
+      throw new ArgumentError("files: $mask");
     }
 
     if (_Utils.isWindows) {
-      files = files.replaceAll("\\", "/");
+      mask = mask.replaceAll("\\", "/");
     }
 
-    _glob = new Glob(files);
+    _glob = new Glob(mask);
   }
 
   /**
@@ -40,10 +40,17 @@ class FileList extends Object with IterableMixin<String> {
   }
 }
 
+// TODO: Support of Windows network
 class _DirectoryLister {
   final Glob glob;
 
+  String _basePath;
+
   List<String> _files;
+
+  GlobPath _globPath;
+
+  int _offset;
 
   List<GlobSegment> _segments;
 
@@ -57,12 +64,33 @@ class _DirectoryLister {
 
   List<String> list(Directory directory) {
     _files = <String>[];
-    var segment = _segments[0];
-    if (segment.crossing) {
-      _listRecursive(directory);
+    if (!directory.existsSync()) {
+      return _files;
+    }
+
+    _basePath = directory.path;
+    if (_Utils.isWindows) {
+      _basePath = _basePath.replaceAll("\\", "/");
+    }
+
+    _globPath = new GlobPath(_basePath);
+    var globPath = glob.globPath;
+    var pattern = glob.pattern;
+    if (globPath.isAbsolute) {
+      _offset = 0;
     } else {
-      if (_Utils.isAbsolute(glob.pattern)) {
-        _listAbsolute(directory);
+      _offset = _basePath.length;
+    }
+
+    if (globPath.isAbsolute) {
+      if (glob.crossing) {
+        _listAbsoluteWithCrossing(directory);
+      } else {
+        _listAbsoluteWithoutCrossing(directory);
+      }
+    } else {
+      if (_segments[0].crossing) {
+        _listRecursive(directory);
       } else {
         _listRelative(directory, 0);
       }
@@ -71,23 +99,57 @@ class _DirectoryLister {
     return _files;
   }
 
-  void _listAbsolute(Directory directory) {
+  void _listAbsoluteWithCrossing(Directory directory) {
+    if (!glob.canMatch(_basePath)) {
+      return;
+    }
+
+    directory = new Directory(_basePath);
+    if (directory.existsSync()) {
+      _listRecursive(directory);
+    }
+  }
+
+  void _listAbsoluteWithoutCrossing(Directory directory) {
+    if (!glob.canMatch(_basePath)) {
+      return;
+    }
+
+    var level = _globPath.segments.length;
+    directory = new Directory(_basePath);
+    if (directory.existsSync()) {
+      _listAbsoluteWithoutCrossingStage2(directory, level);
+    }
+  }
+
+  void _listAbsoluteWithoutCrossingStage2(Directory directory, int level) {
+    var segment = _segments[level];
+    assert(segment.crossing == false);
     for (var entry in directory.listSync()) {
       var entryPath = entry.path;
       if (_Utils.isWindows) {
         entryPath = entryPath.replaceAll("\\", "/");
       }
 
-      if (!glob.canMatch(entryPath)) {
+      var index = entryPath.lastIndexOf("/");
+      String part;
+      if (index != -1) {
+        part = entryPath.substring(index + 1);
+      } else {
+        part = entryPath;
+      }
+
+      if (!segment.match(part)) {
         continue;
       }
 
-      if (glob.match(entryPath)) {
+      if (level == _segments.length - 1) {
         _files.add(entryPath);
+        continue;
       }
 
       if (entry is Directory) {
-        _listAbsolute(entry);
+        _listAbsoluteWithoutCrossingStage2(entry, level + 1);
       }
     }
   }
@@ -99,11 +161,16 @@ class _DirectoryLister {
         entryPath = entryPath.replaceAll("\\", "/");
       }
 
-      if (!glob.canMatch(entryPath)) {
+      var relativePath = entryPath;
+      if (_offset > 0) {
+        relativePath = entryPath.substring(_offset + 1);
+      }
+
+      if (!glob.canMatch(relativePath)) {
         continue;
       }
 
-      if (glob.match(entryPath)) {
+      if (glob.match(relativePath)) {
         _files.add(entryPath);
       }
 
@@ -140,8 +207,8 @@ class _DirectoryLister {
 
       if (entry is Directory) {
         var index = level + 1;
-        var segment = _segments[index];
-        if (!segment.crossing) {
+        var nextSegment = _segments[index];
+        if (!nextSegment.crossing) {
           _listRelative(entry, index);
         } else {
           _listRecursive(entry);
@@ -153,28 +220,4 @@ class _DirectoryLister {
 
 class _Utils {
   static final bool isWindows = Platform.isWindows;
-
-  static bool isAbsolute(String path) {
-    var result = false;
-    if (isWindows) {
-      if (path.length >= 3) {
-        var charCode = path.codeUnitAt(0);
-        if (charCode >= Ascii.A && charCode <= Ascii.Z || charCode >= Ascii.a &&
-            charCode <= Ascii.z) {
-          if (path.codeUnitAt(1) == Ascii.COLON) {
-            if (path.codeUnitAt(2) == Ascii.SLASH || path.codeUnitAt(2) ==
-                Ascii.BACKSLASH) {
-              result = true;
-            }
-          }
-        }
-      }
-    } else {
-      if (path.startsWith("/")) {
-        result = true;
-      }
-    }
-
-    return result;
-  }
 }

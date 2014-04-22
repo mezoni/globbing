@@ -5,6 +5,8 @@ class Glob {
 
   bool _crossing;
 
+  GlobPath _globPath;
+
   List<GlobSegment> _segments;
 
   // TODO: dotglob
@@ -17,10 +19,12 @@ class Glob {
   }
 
   /**
-   * Returns true if glob [pattern] constains the cross directoty [segments].
+   * Returns true if the glob [pattern] constains the cross directoty
+   * [segments].
    */
   bool get crossing {
     if (_crossing == null) {
+      _crossing = false;
       for (var segment in _segments) {
         if (segment.crossing) {
           _crossing = true;
@@ -31,6 +35,11 @@ class Glob {
 
     return _crossing;
   }
+
+  /**
+   * Returns the [GlobPath].
+   */
+  GlobPath get globPath => _globPath;
 
   /**
    * Returns the glob segments in this glob.
@@ -47,7 +56,7 @@ class Glob {
   }
 
   /**
-   * Returns true if specified [path] matches the glob [pattern]; otherwise
+   * Returns true if the specified [path] matches the glob [pattern]; otherwise
    * false.
    */
   bool match(String path) {
@@ -63,8 +72,109 @@ class Glob {
   }
 
   void _parse() {
-    var parser = new _GlobParser();
-    _segments = parser.parse(pattern);
+    _segments = <GlobSegment>[];
+    _globPath = new GlobPath(pattern);
+    for (var pathSegment in globPath.segments) {
+      var parser = new _GlobParser();
+      var segment = parser.parse(pathSegment);
+      _segments.add(segment);
+    }
+  }
+}
+
+/**
+ * The [GlobPath] class not intended for practical use. The main purpose of
+ * this class is to standardizing the splitting paths separated by "/"
+ * character.
+ * This class transparently used by the other consumers of the [Glob] and
+ * [GlobSegment] classes.
+ */
+class GlobPath {
+  final String path;
+
+  bool _isAbsolute;
+
+  String _root;
+
+  List<String> _segments;
+
+  GlobPath(this.path) {
+    if (path == null) {
+      throw new ArgumentError("path: $path");
+    }
+
+    _parse();
+  }
+
+  /**
+   * Returns true if the path is absolute.
+   */
+  bool get isAbsolute => _isAbsolute;
+
+  /**
+   * Returns true if path is relative.
+   */
+  bool get isRelative => !_isAbsolute;
+
+  /**
+   * Returns true if the path is absolute and contains only the root segment.
+   * otherwise false.
+   */
+  bool get isRoot => _root != null;
+
+  /**
+   * Returns the root segment; otherwise null.
+   */
+  String get root => _root;
+
+  /*
+   * Returns the segments of the path.
+   */
+  List<String> get segments => new WrappedList(_segments);
+
+  void _parse() {
+    _isAbsolute = false;
+    _segments = <String>[];
+    if (path.isEmpty) {
+      _segments.add("");
+      return;
+    }
+
+    var position = 0;
+    var charCode = path.codeUnitAt(position);
+    if (charCode == Ascii.SLASH) {
+      _isAbsolute = true;
+      _root = "/";
+      position++;
+    } else if (path.length > 2) {
+      if (charCode >= Ascii.A && charCode <= Ascii.Z || charCode >= Ascii.a &&
+          charCode <= Ascii.z) {
+        if (path.codeUnitAt(1) == Ascii.COLON) {
+          if (path.codeUnitAt(2) == Ascii.SLASH || path.codeUnitAt(2) ==
+              Ascii.BACKSLASH) {
+            _isAbsolute = true;
+            _root = path.substring(0, 2);
+            position += 3;
+          }
+        }
+      }
+    }
+
+    if (root != null) {
+      _segments.add(_root);
+      if(root.length == path.length) {
+        return;
+      }
+    }
+
+    _segments.addAll(path.substring(position).split("/"));
+  }
+
+  /**
+   * Returns the string representation.
+   */
+  String toString() {
+    return path;
   }
 }
 
@@ -73,6 +183,9 @@ class GlobSegment {
 
   _GlobRule _rule;
 
+  /**
+   *  The pattern of glob segment.
+   */
   final String pattern;
 
   GlobSegment._internal(this.pattern, _GlobRule rule, [bool crossing = false]) {
@@ -99,11 +212,11 @@ class GlobSegment {
   bool get crossing => _crossing;
 
   /**
-   * Returns true if specified path [segment] matches segment [pattern];
+   * Returns true if the specified [pathSegment] matches the segment [pattern];
    * otherwise false.
    */
-  bool match(String segment) {
-    var state = new _GlobState(segment);
+  bool match(String pathSegment) {
+    var state = new _GlobState(pathSegment);
     var matches = _rule.match(state);
     if (!matches) {
       return false;
@@ -144,7 +257,7 @@ class _GlobMatcher {
 
     _patterns = patterns;
     _patternCount = _patterns.length;
-    _segments = _GlobUtils.splitPath(path);
+    _segments = new GlobPath(path).segments;
     _segmentCount = _segments.length;
     return _canMatch(0, 0) == _segmentCount;
   }
@@ -159,7 +272,7 @@ class _GlobMatcher {
     }
 
     _patterns = patterns;
-    _segments = _GlobUtils.splitPath(path);
+    _segments = new GlobPath(path).segments;
     return _match(_patterns.length - 1, _segments.length - 1) == -1;
   }
 
@@ -273,23 +386,19 @@ class _GlobParser {
 
   bool get crossing => _crossing;
 
-  List<GlobSegment> parse(String input) {
+  GlobSegment parse(String input) {
     _input = input;
     _length = _input.length;
     _reset(0);
-    return _parseSegments();
-  }
-
-  GlobSegment _createPattern(List<_GlobRule> rules, int start) {
+    var rules = _parseRules();
     _GlobRule rule;
-    if (rules.length == 1) {
-      rule = rules.first;
+    if(rules.length == 1) {
+      rule = rules[0];
     } else {
       rule = new _GlobRuleSequence(rules);
     }
 
-    var pattern = _input.substring(start, _position);
-    return new GlobSegment._internal(pattern, rule, _crossing);
+    return new GlobSegment._internal(input, rule, _crossing);
   }
 
   void _error(String message, int position) {
@@ -404,7 +513,6 @@ class _GlobParser {
       charCodes.add(_ch);
       _nextChar();
       switch (_ch) {
-        case Ascii.SLASH:
         case _EOF:
         case Ascii.ASTERISK:
         case Ascii.QUESTION_MARK:
@@ -414,7 +522,7 @@ class _GlobParser {
           break;
         case Ascii.BACKSLASH:
           _nextChar();
-          if (_ch == _EOF || _ch == Ascii.SLASH) {
+          if (_ch == _EOF) {
             var subject = _input.substring(position, _position);
             var message = "Unterminated escape sequence '$subject'";
             _error(message, _position);
@@ -469,31 +577,6 @@ class _GlobParser {
     return new RangeList(start, end);
   }
 
-  List<GlobSegment> _parseSegments() {
-    var segments = <GlobSegment>[];
-    var stop = false;
-    while (true) {
-      var start = _position;
-      var rules = _parseRules();
-      var segment = _createPattern(rules, start);
-      segments.add(segment);
-      switch (_ch) {
-        case _EOF:
-          stop = true;
-          break;
-        case Ascii.SLASH:
-          _nextChar();
-          break;
-      }
-
-      if (stop) {
-        break;
-      }
-    }
-
-    return segments;
-  }
-
   List<_GlobRule> _parseRules() {
     var rules = <_GlobRule>[];
     var stop = false;
@@ -512,7 +595,6 @@ class _GlobParser {
         case Ascii.LEFT_CURLY_BRACKET:
           rule = _parseChoice();
           break;
-        case Ascii.SLASH:
         case _EOF:
           stop = true;
           break;
@@ -726,45 +808,4 @@ class _GlobState {
   _GlobState(String input)
       : this.intput = input,
         this.length = input.length;
-}
-
-class _GlobUtils {
-  static List<String> splitPath(String path) {
-    var charCodes = <int>[];
-    var result = <String>[];
-    var length = path.length;
-    var start = 0;
-    int end;
-    for (end = 0; end < length; end++) {
-      var charCode = path.codeUnitAt(end);
-      // Escape character
-      if (charCode == Ascii.BACKSLASH) {
-        if (end + 1 < length) {
-          charCodes.add(charCode);
-          end++;
-          charCode = path.codeUnitAt(end);
-          charCodes.add(charCode);
-        } else {
-          throw new FormatException(
-              "Unexpected escape character '\\' at end of line '$path'.");
-        }
-      } else if (charCode == Ascii.SLASH) {
-        var part = new String.fromCharCodes(charCodes);
-        result.add(part);
-        start = end + 1;
-        charCodes.clear();
-      } else {
-        charCodes.add(charCode);
-      }
-    }
-
-    if (start == length) {
-      result.add("");
-    } else {
-      var part = new String.fromCharCodes(charCodes);
-      result.add(part);
-    }
-
-    return result;
-  }
 }

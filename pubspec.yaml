@@ -1,7 +1,7 @@
 name: globbing
-version: 0.0.2
+version: 0.0.3
 author: Andrew Mezoni <andrew.mezoni@gmail.com>
-description: Globbing is a library for the pattern matching based on wildcard characters. Includes helper for a list of files.
+description: Globbing is a library for fast directory listing based on the wildcard patterns.
 homepage: https://github.com/mezoni/globbing
 dependencies:
   ascii: any

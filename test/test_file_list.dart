@@ -1,4 +1,5 @@
 import "dart:io";
+import "package:globbing/globbing.dart";
 import "package:globbing/file_list.dart";
 import "package:path/path.dart" as pathos;
 import "package:unittest/unittest.dart";
@@ -34,15 +35,7 @@ void testAbsolute() {
 
   result.sort((a, b) => a.compareTo(b));
   expect(result, expected, reason: mask);
-
-  if (Platform.isWindows) {
-    // C:\
-    path = path.substring(0, 3);
-  } else {
-    // Path "/" on POSIX
-    path = "/";
-  }
-
+  path = new GlobPath(path).root;
   // Mask "/home/user/dart/globbing/lib/src/*.dart"
   files = new FileList(new Directory(path), mask);
   result = <String>[];
@@ -60,6 +53,7 @@ void testCrossing() {
   path = pathos.dirname(path);
   path = pathos.dirname(path);
 
+  // Relative with crossing, starts with crossing
   // Path "/home/user/dart/globbing"
   // Mask "**/unittest.dart"
   var files = new FileList(new Directory(path), mask);
@@ -68,6 +62,37 @@ void testCrossing() {
   // "globbing/test/packages/unittest/unittest.dart"
   var expected = ["unittest.dart", "unittest.dart", "unittest.dart"];
   var result = <String>[];
+  for (var file in files) {
+    result.add(pathos.basename(file));
+  }
+
+  result.sort((a, b) => a.compareTo(b));
+  expect(result, expected, reason: mask);
+
+  // Relative with crossing, starts with non-crossing
+  // Path "/home/user/dart/globbing"
+  // Mask "test/**/unittest.dart"
+  mask = "test/**/unittest.dart";
+  files = new FileList(new Directory(path), mask);
+  // "globbing/test/packages/unittest/unittest.dart"
+  expected = ["unittest.dart"];
+  result = <String>[];
+  for (var file in files) {
+    result.add(pathos.basename(file));
+  }
+
+  result.sort((a, b) => a.compareTo(b));
+  expect(result, expected, reason: mask);
+
+  // Absolute with crossing, starts with non-crossing
+  // Path "/home/user/dart/globbing"
+  // Mask "/home/user/dart/globbing/test/**/unittest.dart"
+  mask = "test/**/unittest.dart";
+  mask = pathos.join(path, mask);
+  files = new FileList(new Directory(path), mask);
+  // "globbing/test/packages/unittest/unittest.dart"
+  expected = ["unittest.dart"];
+  result = <String>[];
   for (var file in files) {
     result.add(pathos.basename(file));
   }

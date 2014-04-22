@@ -1,7 +1,7 @@
 globbing
 ========
 
-Globbing is a library for the pattern matching based on wildcard characters. Includes helper for a list of files.
+Globbing is a library for fast directory listing based on the wildcard patterns.
 
 BETA VERSION
 

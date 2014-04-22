@@ -1,6 +1,6 @@
 part of globbing.file_list;
 
-class FileList extends Object with IterableMixin<String> {
+class FileList extends Object with ListMixin<String> {
   final Directory directory;
 
   List<String> _files;
@@ -21,17 +21,30 @@ class FileList extends Object with IterableMixin<String> {
     }
 
     _glob = new Glob(mask);
+    _files = _getFiles();
   }
 
   /**
-   * Returns the iterator.
+   * Returns the length.
    */
-  Iterator<String> get iterator {
-    if (_files == null) {
-      _files = _getFiles();
-    }
+  int get length {
+    return _files.length;
+  }
 
-    return _files.iterator;
+  /**
+   * Sets the length;
+   */
+  void set length(int length) {
+    throw new UnsupportedError("length=");
+  }
+
+
+  String operator [](int index) {
+    return _files[index];
+  }
+
+  void operator []=(int index, String value) {
+    throw new UnsupportedError("[]=");
   }
 
   List<String> _getFiles() {

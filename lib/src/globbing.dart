@@ -120,7 +120,7 @@ class GlobPath {
    * Returns true if the path is absolute and contains only the root segment.
    * otherwise false.
    */
-  bool get isRoot => _root != null;
+  bool get isRoot => _segments.length == 1 && _root != null;
 
   /**
    * Returns the root segment; otherwise null.

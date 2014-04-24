@@ -153,7 +153,7 @@ class GlobPath {
           if (path.codeUnitAt(2) == Ascii.SLASH || path.codeUnitAt(2) ==
               Ascii.BACKSLASH) {
             _isAbsolute = true;
-            _root = path.substring(0, 2);
+            _root = path.substring(0, 3);
             position += 3;
           }
         }

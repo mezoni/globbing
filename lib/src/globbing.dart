@@ -90,19 +90,20 @@ class Glob {
  * [GlobSegment] classes.
  */
 class GlobPath {
-  final String path;
-
   bool _isAbsolute;
+
+  String _path;
 
   String _root;
 
   List<String> _segments;
 
-  GlobPath(this.path) {
+  GlobPath(String path) {
     if (path == null) {
       throw new ArgumentError("path: $path");
     }
 
+    _path = path;
     _parse();
   }
 
@@ -123,6 +124,11 @@ class GlobPath {
   bool get isRoot => _segments.length == 1 && _root != null;
 
   /**
+   * Returns the path.
+   */
+  String get path => _path;
+
+  /**
    * Returns the root segment; otherwise null.
    */
   String get root => _root;
@@ -135,46 +141,61 @@ class GlobPath {
   void _parse() {
     _isAbsolute = false;
     _segments = <String>[];
-    if (path.isEmpty) {
+    if (_path.isEmpty) {
       _segments.add("");
       return;
     }
 
     var position = 0;
-    var charCode = path.codeUnitAt(position);
+    var charCode = _path.codeUnitAt(position);
     if (charCode == Ascii.SLASH) {
       _isAbsolute = true;
       _root = "/";
       position++;
-    } else if (path.length > 2) {
+    } else if (_path.length > 2) {
       if (charCode >= Ascii.A && charCode <= Ascii.Z || charCode >= Ascii.a &&
           charCode <= Ascii.z) {
-        if (path.codeUnitAt(1) == Ascii.COLON) {
-          if (path.codeUnitAt(2) == Ascii.SLASH || path.codeUnitAt(2) ==
+        if (_path.codeUnitAt(1) == Ascii.COLON) {
+          if (_path.codeUnitAt(2) == Ascii.SLASH || _path.codeUnitAt(2) ==
               Ascii.BACKSLASH) {
             _isAbsolute = true;
-            _root = path.substring(0, 3);
+            _root = _path.substring(0, 3);
             position += 3;
           }
         }
       }
     }
 
-    if (root != null) {
-      _segments.add(_root);
-      if(root.length == path.length) {
-        return;
+    var parts = _path.substring(position).split("/");
+    var length = parts.length;
+    for (var i = length - 1; i >= 0; i--) {
+      var part = parts[i];
+      if (part.isEmpty) {
+        parts.removeAt(i);
       }
     }
 
-    _segments.addAll(path.substring(position).split("/"));
+    _segments.addAll(parts);
+    if (_path.codeUnitAt(_path.length - 1) == Ascii.SLASH) {
+      if (_root != null && parts.length == 0) {
+      } else {
+        _segments.add("");
+      }
+    }
+
+    if (_root != null) {
+      _path = _root + _segments.join("/");
+      _segments.insert(0, _root);
+    } else {
+      _path = _segments.join("/");
+    }
   }
 
   /**
    * Returns the string representation.
    */
   String toString() {
-    return path;
+    return _path;
   }
 }
 
@@ -392,7 +413,7 @@ class _GlobParser {
     _reset(0);
     var rules = _parseRules();
     _GlobRule rule;
-    if(rules.length == 1) {
+    if (rules.length == 1) {
       rule = rules[0];
     } else {
       rule = new _GlobRuleSequence(rules);

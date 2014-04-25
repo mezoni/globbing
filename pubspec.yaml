@@ -1,5 +1,5 @@
 name: globbing
-version: 0.0.5
+version: 0.0.6
 author: Andrew Mezoni <andrew.mezoni@gmail.com>
 description: Globbing is a library for fast directory listing based on the wildcard patterns.
 homepage: https://github.com/mezoni/globbing

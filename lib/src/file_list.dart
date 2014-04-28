@@ -115,12 +115,7 @@ class _DirectoryLister {
     if (glob.isAbsolute) {
       _offset = 0;
     } else {
-      var path = directory.path;
-      if (_isWindows) {
-        path = path.replaceAll("\\", "/");
-      }
-
-      _offset = path.length;
+      _offset = directory.path.length;
     }
 
     if (glob.isAbsolute) {
@@ -141,7 +136,12 @@ class _DirectoryLister {
   }
 
   void _listAbsoluteWithCrossing(Directory directory) {
-    var pathSegments = pathos.split(directory.path);
+    var path = directory.path;
+    if (_isWindows) {
+      path = path.replaceAll("\\", "/");
+    }
+
+    var pathSegments = pathos.split(path);
     var length = pathSegments.length;
     if (length > _segments.length) {
       return;
@@ -164,7 +164,12 @@ class _DirectoryLister {
   }
 
   void _listAbsoluteWithoutCrossing(Directory directory) {
-    var pathSegments = pathos.split(directory.path);
+    var path = directory.path;
+    if (_isWindows) {
+      path = path.replaceAll("\\", "/");
+    }
+
+    var pathSegments = pathos.split(path);
     var length = pathSegments.length;
     if (length > _segments.length) {
       return;

@@ -365,10 +365,11 @@ class _GlobCompiler {
         break;
       default:
         if (_alpha(_ch) && _lookup(1) == ":" && _lookup(2) == "/") {
-          _position += 3;
           _write(_ch);
           _write(":/");
           _isAbsolute = true;
+          _position += 2;
+          _nextChar();
           _createSegment();
         }
 

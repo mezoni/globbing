@@ -102,6 +102,71 @@ void testCrossing() {
 }
 
 void testOnlyDirectory() {
+  var mask = "*/";
+    var path = Platform.script.toFilePath();
+    path = pathos.dirname(path);
+    path = pathos.dirname(path);
+
+    // Path "/home/user/dart/globbing"
+    // Mask "*/"
+    // Relative
+    var files = new FileList(new Directory(path), mask);
+    var expected = ["example", "lib", "packages", "test"];
+    var result = <String>[];
+    for (var file in files) {
+      result.add(pathos.basename(file));
+    }
+
+    result.sort((a, b) => a.compareTo(b));
+    expect(result, expected, reason: mask);
+
+    // Path "/home/user/dart/globbing/lib"
+    // Mask "**/"
+    // Relative with crossing
+    mask = "**/";
+    path = pathos.join(path, "lib");
+    files = new FileList(new Directory(path), mask);
+    expected = ["src"];
+    result = <String>[];
+    for (var file in files) {
+      result.add(pathos.basename(file));
+    }
+
+    result.sort((a, b) => a.compareTo(b));
+    expect(result, expected, reason: mask);
+
+    // Path "/home/user/dart/globbing"
+    // Mask "/home/user/dart/globbing/*/"
+    // Absolute
+    path = pathos.dirname(path);
+    mask = path + "/*/";
+    files = new FileList(new Directory(path), mask);
+    expected = ["example", "lib", "packages", "test"];
+    result = <String>[];
+    for (var file in files) {
+      result.add(pathos.basename(file));
+    }
+
+    result.sort((a, b) => a.compareTo(b));
+    expect(result, expected, reason: mask);
+
+    // Path "/home/user/dart/globbing/lib"
+    // Mask "/home/user/dart/globbing/lib/**/"
+    // Absolute
+    path = pathos.join(path, "lib");
+    mask = path + "/**/";
+    files = new FileList(new Directory(path), mask);
+    expected = ["src"];
+    result = <String>[];
+    for (var file in files) {
+      result.add(pathos.basename(file));
+    }
+
+    result.sort((a, b) => a.compareTo(b));
+    expect(result, expected, reason: mask);
+}
+
+void testRelative() {
   var mask = "lib/src/*.dart";
   var path = Platform.script.toFilePath();
   path = pathos.dirname(path);
@@ -112,71 +177,6 @@ void testOnlyDirectory() {
   var files = new FileList(new Directory(path), mask);
   var expected = ["file_list.dart", "globbing.dart"];
   var result = <String>[];
-  for (var file in files) {
-    result.add(pathos.basename(file));
-  }
-
-  result.sort((a, b) => a.compareTo(b));
-  expect(result, expected, reason: mask);
-}
-
-void testRelative() {
-  var mask = "*/";
-  var path = Platform.script.toFilePath();
-  path = pathos.dirname(path);
-  path = pathos.dirname(path);
-
-  // Path "/home/user/dart/globbing"
-  // Mask "*/"
-  // Relative
-  var files = new FileList(new Directory(path), mask);
-  var expected = ["example", "lib", "packages", "test"];
-  var result = <String>[];
-  for (var file in files) {
-    result.add(pathos.basename(file));
-  }
-
-  result.sort((a, b) => a.compareTo(b));
-  expect(result, expected, reason: mask);
-
-  // Path "/home/user/dart/globbing/lib"
-  // Mask "**/"
-  // Relative with crossing
-  mask = "**/";
-  path = pathos.join(path, "lib");
-  files = new FileList(new Directory(path), mask);
-  expected = ["src"];
-  result = <String>[];
-  for (var file in files) {
-    result.add(pathos.basename(file));
-  }
-
-  result.sort((a, b) => a.compareTo(b));
-  expect(result, expected, reason: mask);
-
-  // Path "/home/user/dart/globbing"
-  // Mask "/home/user/dart/globbing/*/"
-  // Absolute
-  path = pathos.dirname(path);
-  mask = path + "/*/";
-  files = new FileList(new Directory(path), mask);
-  expected = ["example", "lib", "packages", "test"];
-  result = <String>[];
-  for (var file in files) {
-    result.add(pathos.basename(file));
-  }
-
-  result.sort((a, b) => a.compareTo(b));
-  expect(result, expected, reason: mask);
-
-  // Path "/home/user/dart/globbing/lib"
-  // Mask "/home/user/dart/globbing/lib/**/"
-  // Absolute
-  path = pathos.join(path, "lib");
-  mask = path + "/**/";
-  files = new FileList(new Directory(path), mask);
-  expected = ["src"];
-  result = <String>[];
   for (var file in files) {
     result.add(pathos.basename(file));
   }

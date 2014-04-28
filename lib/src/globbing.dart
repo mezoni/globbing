@@ -429,7 +429,7 @@ class _GlobCompiler {
   void _parseChoice() {
     _nextChar();
     _segmentStrict = false;
-    _write("{(?:");
+    _write("(?:");
     var empty = true;
     var insideChoice = _insideChoice;
     var firstInSegment = _firstInSegment;

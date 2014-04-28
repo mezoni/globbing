@@ -15,7 +15,8 @@ void main() {
   var pubCache = getPubCachePath();
   if (pubCache != null) {
     var mask = "**/unittest*/pubspec.yaml";
-    var files = new FileList(new Directory(pubCache), mask);
+    var directory = new Directory(pubCache);
+    var files = new FileList(directory, mask);
     if (!files.isEmpty) {
       var list = files.toList();
       var length = list.length;
@@ -29,7 +30,8 @@ void main() {
   // Find "CHANGELOG" in "pub cache"
   if (pubCache != null) {
     var mask = "**/CHANGELOG*";
-    var files = new FileList(new Directory(pubCache), mask);
+    var directory = new Directory(pubCache);
+    var files = new FileList(directory, mask, caseSensitive: false);
     if (!files.isEmpty) {
       var list = files.toList();
       var length = list.length;
@@ -43,7 +45,8 @@ void main() {
   // Find executable files in "bin" folders
   if (pubCache != null) {
     var mask = "**/bin/*.dart";
-    var files = new FileList(new Directory(pubCache), mask);
+    var directory = new Directory(pubCache);
+    var files = new FileList(directory, mask);
     if (!files.isEmpty) {
       var list = files.toList();
       var length = list.length;

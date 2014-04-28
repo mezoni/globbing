@@ -4,6 +4,7 @@ import "package:unittest/unittest.dart";
 void main() {
   test();
   testCharacterClass();
+  testChoice();
   testCrossing();
   testDotglob();
   testEscape();
@@ -92,6 +93,16 @@ void testCharacterClass() {
   path = "0";
   result = glob.match(path);
   expect(result, true, reason: glob.pattern);
+}
+
+void testChoice() {
+  // "a{b,c,}"
+  var glob = new Glob("a{b,c,}");
+  var list = ["a", "ab", "ac"];
+  for(var path in list) {
+    var result = glob.match(path);
+      expect(result, true, reason: path);
+  }
 }
 
 void testCrossing() {

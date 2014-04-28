@@ -2,6 +2,7 @@ globbing
 ========
 
 Globbing is a library for fast directory listing based on the wildcard patterns.
+Uses an intelligent search operations with reduced amount of operations of disk access.
 
 BETA VERSION
 

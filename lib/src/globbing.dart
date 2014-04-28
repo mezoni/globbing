@@ -1,67 +1,59 @@
 part of globbing;
 
-class Glob {
+class Glob implements Pattern {
+  final bool caseSensitive;
+
   final String pattern;
 
-  bool _crossing;
+  bool _crossesDirectory;
 
-  GlobPath _globPath;
+  Pattern _expression;
+
+  bool _isAbsolute;
 
   List<GlobSegment> _segments;
 
-  // TODO: dotglob
-  Glob(this.pattern) {
+  Glob(this.pattern, {this.caseSensitive: true}) {
     if (pattern == null) {
       throw new ArgumentError("pattern: $pattern");
     }
 
-    _parse();
-  }
-
-  /**
-   * Returns true if the glob [pattern] constains the cross directoty
-   * [segments].
-   */
-  bool get crossing {
-    if (_crossing == null) {
-      _crossing = false;
-      for (var segment in _segments) {
-        if (segment.crossing) {
-          _crossing = true;
-          break;
-        }
-      }
+    if (caseSensitive == null) {
+      throw new ArgumentError("caseSensitive: $caseSensitive");
     }
 
-    return _crossing;
+    _compile(caseSensitive);
   }
 
   /**
-   * Returns the pattern path.
+   * Returns true if the glob [pattern] constains the segments that crosses
+   * the directoty.
    */
-  GlobPath get globPath => _globPath;
+  bool get crossesDirectory => _crossesDirectory;
 
   /**
-   * Returns the glob segments in this glob.
+   * Returns true if glob [pattern] is an absolute path; otherwise false;   *
    */
-  List<GlobSegment> get segments => new WrappedList(_segments);
+  bool get isAbsolute => _isAbsolute;
 
   /**
-   * Returns true if the specified [path] can be matched as a potential part of
-   * the route; otherwise false.
+   * Returns the glob segments.
    */
-  bool canMatch(String path) {
-    var matcher = new _GlobMatcher();
-    return matcher.canMatch(path, _segments);
+  List<GlobSegment> get segments => _segments;
+
+  Iterable<Match> allMatches(String str) {
+    return _expression.allMatches(str);
   }
 
   /**
-   * Returns true if the specified [path] matches the glob [pattern]; otherwise
-   * false.
+   * Returns true if pattern matches thes string.
    */
-  bool match(String path) {
-    var matcher = new _GlobMatcher();
-    return matcher.match(path, _segments);
+  bool match(String string) {
+    return !allMatches(string).isEmpty;
+  }
+
+  Match matchAsPrefix(String string, [int start = 0]) {
+    return _expression.matchAsPrefix(string, start);
   }
 
   /**
@@ -71,384 +63,358 @@ class Glob {
     return pattern;
   }
 
-  void _parse() {
-    _segments = <GlobSegment>[];
-    _globPath = new GlobPath(pattern);
-    for (var pathSegment in globPath.segments) {
-      var parser = new _GlobParser();
-      var segment = parser.parse(pathSegment);
-      _segments.add(segment);
-    }
+  void _compile(bool caseSensitive) {
+    var compiler = new _GlobCompiler();
+    var result = compiler.compile(pattern, caseSensitive: caseSensitive);
+    _crossesDirectory = result.crossesDirectory;
+    _expression = result.expression;
+    _isAbsolute = result.isAbsolute;
+    _segments = result.segments;
   }
 }
 
-/**
- * The [GlobPath] class not intended for practical use. The main purpose of
- * this class is to standardizing the splitting paths separated by "/"
- * character.
- * This class transparently used by the other consumers of the [Glob] and
- * [GlobSegment] classes.
- */
-class GlobPath {
-  bool _isAbsolute;
+class GlobSegment implements Pattern {
+  Pattern _expression;
 
-  String _path;
+  /**
+   * True if the segment crosses the directory.
+   */
+  final bool crossesDirectory;
 
-  String _root;
+  /**
+   * True if segment should match only directory.
+   */
+  final bool onlyDirectory;
 
-  List<String> _segments;
+  /**
+   * Original glob pattern.
+   */
+  final String pattern;
 
-  GlobPath(String path) {
-    if (path == null) {
-      throw new ArgumentError("path: $path");
+  /**
+   * True if the segment pattern contains no wildcards '*', '?', no character
+   * classes '[]', no choices '{}'; otherwise false;
+   * false.
+   */
+  final bool strict;
+
+  GlobSegment(this.pattern, Pattern
+      expression, {this.crossesDirectory, this.onlyDirectory, this.strict}) {
+    if (pattern == null) {
+      throw new ArgumentError("pattern: $pattern");
     }
 
-    _path = path;
-    _parse();
+    if (expression == null) {
+      throw new ArgumentError("expression: $expression");
+    }
+
+    if (crossesDirectory == null) {
+      throw new ArgumentError("crossing: $crossesDirectory");
+    }
+
+    if (strict == null) {
+      throw new ArgumentError("strict: $strict");
+    }
+
+    if (onlyDirectory == null) {
+      throw new ArgumentError("trailingSlash: $onlyDirectory");
+    }
+
+    _expression = expression;
+  }
+
+  Iterable<Match> allMatches(String str) {
+    return _expression.allMatches(str);
   }
 
   /**
-   * Returns true if the path is absolute.
+   * Returns true if pattern matches thes string.
    */
-  bool get isAbsolute => _isAbsolute;
+  bool match(String string) {
+    return !allMatches(string).isEmpty;
+  }
 
-  /**
-   * Returns true if path is relative.
-   */
-  bool get isRelative => !_isAbsolute;
-
-  /**
-   * Returns true if the path is absolute and contains only the root segment.
-   * otherwise false.
-   */
-  bool get isRoot => _segments.length == 1 && _root != null;
-
-  /**
-   * Returns the path.
-   */
-  String get path => _path;
-
-  /**
-   * Returns the root segment; otherwise null.
-   */
-  String get root => _root;
-
-  /*
-   * Returns the segments of the path.
-   */
-  List<String> get segments => new WrappedList(_segments);
-
-  void _parse() {
-    _isAbsolute = false;
-    _segments = <String>[];
-    if (_path.isEmpty) {
-      _segments.add("");
-      return;
-    }
-
-    var position = 0;
-    var charCode = _path.codeUnitAt(position);
-    if (charCode == Ascii.SLASH) {
-      _isAbsolute = true;
-      _root = "/";
-      position++;
-    } else if (_path.length > 2) {
-      if (charCode >= Ascii.A && charCode <= Ascii.Z || charCode >= Ascii.a &&
-          charCode <= Ascii.z) {
-        if (_path.codeUnitAt(1) == Ascii.COLON) {
-          if (_path.codeUnitAt(2) == Ascii.SLASH || _path.codeUnitAt(2) ==
-              Ascii.BACKSLASH) {
-            _isAbsolute = true;
-            _root = _path.substring(0, 3);
-            position += 3;
-          }
-        }
-      }
-    }
-
-    var parts = _path.substring(position).split("/");
-    var length = parts.length;
-    for (var i = length - 1; i >= 0; i--) {
-      var part = parts[i];
-      if (part.isEmpty) {
-        parts.removeAt(i);
-      }
-    }
-
-    _segments.addAll(parts);
-    if (_path.codeUnitAt(_path.length - 1) == Ascii.SLASH) {
-      if (_root != null && parts.length == 0) {
-      } else {
-        _segments.add("");
-      }
-    }
-
-    if (_root != null) {
-      _path = _root + _segments.join("/");
-      _segments.insert(0, _root);
-    } else {
-      _path = _segments.join("/");
-    }
+  Match matchAsPrefix(String string, [int start = 0]) {
+    return _expression.matchAsPrefix(string, start);
   }
 
   /**
    * Returns the string representation.
    */
   String toString() {
-    return _path;
+    return pattern;
   }
 }
 
-class GlobSegment {
-  bool _crossing;
+class _GlobCompiler {
+  static const String _EOF = "";
 
-  _GlobRule _rule;
+  static const String _MESSAGE_CANNOT_ESCAPE_SLASH_CHARACTER =
+      "Cannot escape slash '/' character";
 
-  /**
-   *  The pattern of glob segment.
-   */
-  final String pattern;
+  static const String _MESSAGE_CHOICE_SHOULD_CONTAINS_AT_LEAST_TWO_ELEMENTS =
+      "Choice should contains at least two elements";
 
-  GlobSegment._internal(this.pattern, _GlobRule rule, [bool crossing = false]) {
-    if (pattern == null) {
-      throw new ArgumentError("pattern: $pattern");
+  static const String _MESSAGE_RANGE_OUT_OF_ORDER_IN_CHARACTER_CLASS =
+      "Range out of order in character class";
+
+  static const String _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS =
+      "Explicit slash '/' not allowed in character class";
+
+  static const String _MESSAGE_SLASH_NOT_ALLOWED_IN_CHOICE =
+      "Explicit slash '/' not allowed in choice";
+
+  static const String _MESSAGE_UNTERMINATED_BACKSLASH_SEQUENCE =
+      "Unterminated backslash '\\' escape sequence";
+
+  static const String _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS =
+      "Unexpected end of character class";
+
+  static const String _MESSAGE_UNEXPECTED_END_OF_CHOICE =
+      "Unexpected end of choice";
+
+  Pattern expression;
+
+  bool _caseSensitive;
+
+  String _ch;
+
+  bool _firstInSegment;
+
+  StringBuffer _gbuf;
+
+  bool _globCrossing;
+
+  bool _globStrict;
+
+  String _input;
+
+  bool _insideChoice;
+
+  bool _isAbsolute;
+
+  int _length;
+
+  int _position;
+
+  StringBuffer _sbuf;
+
+  bool _segmentCrossing;
+
+  List<GlobSegment> _segments;
+
+  int _segmentStart;
+
+  bool _segmentStrict;
+
+  _GlobCompilerResult compile(String input, {bool caseSensitive: true}) {
+    if (input == null) {
+      throw new ArgumentError("input: $input");
     }
 
-    if (rule == null) {
-      throw new ArgumentError("rule: $rule");
-    }
-
-    if (crossing == null) {
-      crossing = false;
-    }
-
-    _crossing = crossing;
-    _rule = rule;
+    this._input = input;
+    this._caseSensitive = caseSensitive;
+    _reset();
+    _parse();
+    var source = _gbuf.toString();
+    var result = new _GlobCompilerResult();
+    result.crossesDirectory = _globCrossing;
+    result.expression = new RegExp(source, caseSensitive: caseSensitive);
+    result.isAbsolute = _isAbsolute;
+    result.segments = _segments;
+    return result;
   }
 
-  /**
-   * Returns true if this glob segment constains the cross directoty "**"
-   * mask.
-   */
-  bool get crossing => _crossing;
-
-  /**
-   * Returns true if the specified [pathSegment] matches the segment [pattern];
-   * otherwise false.
-   */
-  bool match(String pathSegment) {
-    var state = new _GlobState(pathSegment);
-    var matches = _rule.match(state);
-    if (!matches) {
+  bool _alpha(String s) {
+    if (s.isEmpty) {
       return false;
     }
 
-    if (state.position == state.length) {
+    var c = s.codeUnitAt(0);
+    if (c >= 65 && c <= 90 || c >= 97 && c <= 122) {
       return true;
     }
 
     return false;
   }
 
-  /**
-   * Returns the string representation.
-   */
-  String toString() {
-    return pattern;
-  }
-}
-
-class _GlobMatcher {
-  int _patternCount;
-
-  List<GlobSegment> _patterns;
-
-  int _segmentCount;
-
-  List<String> _segments;
-
-  bool canMatch(String path, List<GlobSegment> patterns) {
-    if (path == null) {
-      throw new ArgumentError("path: $path");
+  GlobSegment _createSegment() {
+    if (_segmentCrossing) {
+      _globCrossing = true;
     }
 
-    if (patterns == null) {
-      throw new ArgumentError("patterns: $patterns");
+    if (!_segmentStrict) {
+      _globStrict = false;
     }
 
-    _patterns = patterns;
-    _patternCount = _patterns.length;
-    _segments = new GlobPath(path).segments;
-    _segmentCount = _segments.length;
-    return _canMatch(0, 0) == _segmentCount;
-  }
-
-  bool match(String path, List<GlobSegment> patterns) {
-    if (path == null) {
-      throw new ArgumentError("path: $path");
-    }
-
-    if (patterns == null) {
-      throw new ArgumentError("patterns: $patterns");
-    }
-
-    _patterns = patterns;
-    _segments = new GlobPath(path).segments;
-    return _match(_patterns.length - 1, _segments.length - 1) == -1;
-  }
-
-  int _canMatch(int pi, int si) {
-    for ( ; si < _segmentCount; pi++, si++) {
-      if (pi >= _patternCount) {
-        break;
-      }
-
-      var pattern = _patterns[pi];
-      var segment = _segments[si];
-      var matches = pattern.match(segment);
-      if (!matches) {
-        break;
-      }
-
-      if (pattern.crossing) {
-        si++;
-        var start = si;
-        while (true) {
-          if (si == _segmentCount) {
-            break;
-          }
-
-          if (si < _segmentCount) {
-            segment = _segments[si];
-            if (pattern.match(segment)) {
-              si++;
-              continue;
-            }
-          }
-
-          pi++;
-          for ( ; si >= start; si--) {
-            if (_canMatch(pi, si) == _segmentCount) {
-              return _segmentCount;
-            }
-          }
-
+    var text = _input.substring(_segmentStart, _position);
+    var trailingSlash = false;
+    if (_ch == "/") {
+      while (true) {
+        _nextChar();
+        if (_ch != "/") {
           break;
         }
+      }
 
-        break;
+      _gbuf.write("/");
+      if (_ch == _EOF) {
+        trailingSlash = true;
       }
     }
 
-    return si;
-  }
-
-  int _match(int pi, int si) {
-    for ( ; si >= 0; pi--, si--) {
-      if (pi < 0) {
-        break;
-      }
-
-      var pattern = _patterns[pi];
-      var segment = _segments[si];
-      var matches = pattern.match(segment);
-      if (!matches) {
-        break;
-      }
-
-      if (!pattern.crossing) {
-        continue;
-      }
-
-      pi--;
-      si--;
-      for ( ; si >= 0; si--) {
-        if (pi >= 0) {
-          if (_match(pi, si) == -1) {
-            return -1;
-          }
-        }
-
-        if (pi < 0 && si < 0) {
-          return pi;
-        }
-
-        if (si >= 0) {
-          var segment = _segments[si];
-          if (!pattern.match(segment)) {
-            return pi;
-          }
-        } else {
-          return pi;
-        }
-      }
-
-      break;
-    }
-
-    return pi;
-  }
-}
-
-class _GlobParser {
-  static const int _EOF = 1;
-
-  int _ch;
-
-  bool _crossing;
-
-  bool _commaDelimiter;
-
-  String _input;
-
-  int _length;
-
-  int _position;
-
-  bool get crossing => _crossing;
-
-  GlobSegment parse(String input) {
-    _input = input;
-    _length = _input.length;
-    _reset(0);
-    var rules = _parseRules();
-    _GlobRule rule;
-    if (rules.length == 1) {
-      rule = rules[0];
-    } else {
-      rule = new _GlobRuleSequence(rules);
-    }
-
-    return new GlobSegment._internal(input, rule, _crossing);
+    _sbuf.write("\$");
+    var source = _sbuf.toString();
+    var expression = new RegExp(source, caseSensitive: _caseSensitive);
+    var segment = new GlobSegment(text, expression, crossesDirectory:
+        _segmentCrossing, strict: _segmentStrict, onlyDirectory: trailingSlash);
+    _segments.add(segment);
+    _resetSegment();
+    return segment;
   }
 
   void _error(String message, int position) {
-    throw new FormatException("($position), $message in '$_input'.");
+    throw new FormatException(
+        "(column: ${position + 1}), $message in '$_input'.");
   }
 
-  int _nextChar() {
+  int _escapeRangeCharacter() {
+    int charCode;
+    switch (_ch) {
+      case _EOF:
+        var message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
+        _error(message, _position - 1);
+        break;
+      case "/":
+        var message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS;
+        _error(message, _position);
+        break;
+      case "\\":
+        _nextChar();
+        switch (_ch) {
+          case _EOF:
+            var message = _MESSAGE_UNTERMINATED_BACKSLASH_SEQUENCE;
+            _error(message, _position - 1);
+            break;
+          case "/":
+            var message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS;
+            _error(message, _position);
+            break;
+          default:
+            charCode = _ch.codeUnitAt(0);
+            _write("\\");
+            _write(_ch);
+            _nextChar();
+            break;
+        }
+
+        break;
+      case "^":
+        charCode = _ch.codeUnitAt(0);
+        _write("\\");
+        _write(_ch);
+        _nextChar();
+        break;
+      default:
+        charCode = _ch.codeUnitAt(0);
+        _write(_ch);
+        _nextChar();
+        break;
+    }
+
+    return charCode;
+  }
+
+  String _lookup(int offset) {
+    var position = _position + offset;
+    if (position < _length) {
+      return _input[position];
+    }
+
+    return _EOF;
+  }
+
+  String _nextChar() {
     if (_position + 1 >= _length) {
       _ch = _EOF;
       _position = _length;
       return _EOF;
     }
 
-    _ch = _input.codeUnitAt(++_position);
+    _ch = _input[++_position];
     return _ch;
   }
 
-  _GlobRuleAny _parseAny() {
+  // TODO: "~"
+  void _parse() {
+    _gbuf.write("^");
+    switch (_ch) {
+      case _EOF:
+        break;
+      case "/":
+        _write("/");
+        while (true) {
+          _nextChar();
+          if (_ch != "/") {
+            break;
+          }
+        }
+
+        _isAbsolute = true;
+        _createSegment();
+        break;
+      default:
+        if (_alpha(_ch) && _lookup(1) == ":" && _lookup(2) == "/") {
+          _position += 3;
+          _write(_ch);
+          _write(":/");
+          _isAbsolute = true;
+          _createSegment();
+        }
+
+        break;
+    }
+
+    if (_ch != _EOF) {
+      _parseSegments();
+    }
+
+    _gbuf.write("\$");
+  }
+
+  void _parseCharacterClass() {
     _nextChar();
-    var count = 1;
+    _firstInSegment = false;
+    _segmentStrict = false;
+    var position = _position;
+    _write("[");
+    if (_ch == "!") {
+      _write("^");
+      _nextChar();
+    }
+
+    if (_ch == "]") {
+      _write("\\]-\\]'");
+      _nextChar();
+    }
+
     var stop = false;
     while (true) {
       switch (_ch) {
-        case Ascii.QUESTION_MARK:
+        case "/":
+          var message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS;
+          _error(message, _position);
+          break;
+        case _EOF:
+          var message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
+          _error(message, _position);
+          break;
+        case "]":
           _nextChar();
-          count++;
+          stop = true;
           break;
         default:
-          stop = true;
+          _parseRange();
           break;
       }
 
@@ -457,59 +423,46 @@ class _GlobParser {
       }
     }
 
-    return new _GlobRuleAny(count);
+    _write("]");
   }
 
-  _GlobRuleCharacterClass _parserCharacterClass() {
-    var not = false;
-    var position = _position;
-    var ranges = <RangeList>[];
+  void _parseChoice() {
     _nextChar();
-    if (_ch == Ascii.EXCLAMATION_MARK) {
-      not = true;
-      _nextChar();
-    }
-
-    if (_ch == Ascii.RIGHT_SQUARE_BRACKET) {
-      var range = new RangeList(_ch, _ch);
-      ranges.add(range);
-      _nextChar();
-    }
-
+    _segmentStrict = false;
+    _write("{(?:");
+    var empty = true;
+    var insideChoice = _insideChoice;
+    var firstInSegment = _firstInSegment;
     var stop = false;
+    _insideChoice = true;
     while (true) {
       switch (_ch) {
-        case Ascii.SLASH:
-          var subject = _input.substring(position, _position + 1);
-          var message =
-              "Explicit '/' not allowed in character class '$subject'";
-          _error(message, _position);
-          break;
         case _EOF:
-          var subject = _input.substring(position, _position);
-          var message = "Unterminated character class '$subject'";
+          var message = _MESSAGE_UNEXPECTED_END_OF_CHOICE;
+          _error(message, _position - 1);
+          break;
+        case "/":
+          var message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHOICE;
           _error(message, _position);
           break;
-        case Ascii.RIGHT_SQUARE_BRACKET:
+        case ",":
+          _nextChar();
+          _write("|");
+          if (_ch == "}") {
+            _nextChar();
+            stop = true;
+          } else {
+            _firstInSegment = firstInSegment;
+          }
+
+          empty = false;
+          break;
+        case "}":
           _nextChar();
           stop = true;
           break;
         default:
-          var range = _parseRange();
-          if (range == null) {
-            var subject = _input.substring(position, _position);
-            var message = "Unterminated character class '$subject'";
-            _error(message, _position);
-          }
-
-          if (range.start == Ascii.SLASH || range.end == Ascii.SLASH) {
-            var subject = _input.substring(position, _position);
-            var message =
-                "Explicit '/' not allowed in character class '$subject'";
-            _error(message, _position);
-          }
-
-          ranges.add(range);
+          _parseChoiceElement();
           break;
       }
 
@@ -518,43 +471,103 @@ class _GlobParser {
       }
     }
 
-    return new _GlobRuleCharacterClass(ranges, not);
+    if (empty) {
+      var message = _MESSAGE_CHOICE_SHOULD_CONTAINS_AT_LEAST_TWO_ELEMENTS;
+      _error(message, _position - 1);
+    }
+
+    _insideChoice = insideChoice;
+    _write(")");
   }
 
-  _parseChoice() {
-    // TODO: choice
-    throw new UnimplementedError("_parseChoice()");
+  void _parseChoiceElement() {
+    switch (_ch) {
+      case "*":
+        _parseZeroOrMore();
+        break;
+      case "?":
+        _parseOneOrMore();
+        break;
+      case "[":
+        _parseCharacterClass();
+        break;
+      case "{":
+        _parseChoice();
+        break;
+      default:
+        _parseLiteral();
+        break;
+    }
   }
 
-  _GlobRuleLiteral _parserLiteral() {
-    var charCodes = <int>[];
-    var position = _position;
+  void _parseLiteral() {
+    _firstInSegment = false;
     var stop = false;
     while (true) {
-      charCodes.add(_ch);
-      _nextChar();
       switch (_ch) {
         case _EOF:
-        case Ascii.ASTERISK:
-        case Ascii.QUESTION_MARK:
-        case Ascii.LEFT_SQUARE_BRACKET:
-        case Ascii.LEFT_CURLY_BRACKET:
+        case "*":
+        case "{":
+        case "[":
+        case "}":
+        case "?":
+        case "/":
           stop = true;
           break;
-        case Ascii.BACKSLASH:
+        case ",":
+          if (_insideChoice) {
+            stop = true;
+          } else {
+            _write(_ch);
+            _nextChar();
+          }
+
+          break;
+        case "\\":
           _nextChar();
           if (_ch == _EOF) {
-            var subject = _input.substring(position, _position);
-            var message = "Unterminated escape sequence '$subject'";
-            _error(message, _position);
+            var message = _MESSAGE_UNTERMINATED_BACKSLASH_SEQUENCE;
+            _error(message, _position - 1);
+          }
+
+          switch (_ch) {
+            case "/":
+              var message = _MESSAGE_CANNOT_ESCAPE_SLASH_CHARACTER;
+              _error(message, _position);
+              break;
+            case "*":
+            case "{":
+            case "[":
+            case "?":
+            case "}":
+              _write("\\");
+              _write(_ch);
+              _nextChar();
+              break;
+            case "\\":
+              _write("\\");
+              _write(_ch);
+              _nextChar();
+              break;
+            default:
+              break;
           }
 
           break;
-        case Ascii.COMMA:
-          if (_commaDelimiter) {
-            stop = true;
-          }
-
+        case "^":
+        case "\$":
+        case "(":
+        case ".":
+        case "+":
+        case ")":
+        case "|":
+          _write("\\");
+          _write(_ch);
+          _nextChar();
+          break;
+        default:
+          _write(_ch);
+          _nextChar();
           break;
       }
 
@@ -562,271 +575,175 @@ class _GlobParser {
         break;
       }
     }
-
-    var literal = new String.fromCharCodes(charCodes);
-    return new _GlobRuleLiteral(literal);
   }
 
-  RangeList _parseRange() {
-    var end = _ch;
-    var start = _ch;
-    _nextChar();
+  void _parseOneOrMore() {
+    _firstInSegment = false;
+    _segmentStrict = false;
+    var count = 1;
+    while (true) {
+      _nextChar();
+      if (_ch != "?") {
+        break;
+      }
+
+      count++;
+    }
+
+    _write(".{");
+    _write(count.toRadixString(10));
+    _write("}");
+  }
+
+  void _parseRange() {
+    var position = _position;
+    var start = _escapeRangeCharacter();
+    var end = start;
     switch (_ch) {
-      case Ascii.MINUS_SIGN:
+      case "-":
         _nextChar();
         if (_ch == _EOF) {
-          return null;
-        } else if (_ch == Ascii.RIGHT_SQUARE_BRACKET) {
+          var message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
+          _error(message, _position - 1);
+          return;
+        } else if (_ch == "]") {
           _position -= 2;
           _nextChar();
         } else {
-          end = _ch;
-          _nextChar();
+          _write("-");
+          end = _escapeRangeCharacter();
         }
 
         break;
     }
 
     if (start > end) {
-      var start = _input[_position - 3];
-      var end = _input[_position - 1];
-      var subject = "$start-$end";
-      var message = "Illegal range '$subject'";
-      _error(message, _position - 3);
+      var message = _MESSAGE_RANGE_OUT_OF_ORDER_IN_CHARACTER_CLASS;
+      _error(message, position);
     }
-
-    return new RangeList(start, end);
   }
 
-  List<_GlobRule> _parseRules() {
-    var rules = <_GlobRule>[];
+  void _parseSegment() {
     var stop = false;
     while (true) {
-      _GlobRule rule;
       switch (_ch) {
-        case Ascii.ASTERISK:
-          rule = _parseZeroOrMore();
-          break;
-        case Ascii.QUESTION_MARK:
-          rule = _parseAny();
-          break;
-        case Ascii.LEFT_SQUARE_BRACKET:
-          rule = _parserCharacterClass();
-          break;
-        case Ascii.LEFT_CURLY_BRACKET:
-          rule = _parseChoice();
-          break;
         case _EOF:
+        case "/":
           stop = true;
           break;
+        case "*":
+          _parseZeroOrMore();
+          break;
+        case "?":
+          _parseOneOrMore();
+          break;
+        case "[":
+          _parseCharacterClass();
+          break;
+        case "{":
+          _parseChoice();
+          break;
         default:
-          rule = _parserLiteral();
+          _parseLiteral();
           break;
       }
 
       if (stop) {
         break;
       }
-
-      rules.add(rule);
     }
-
-    return rules;
   }
 
-  _GlobRuleZeroOrMore _parseZeroOrMore() {
+  void _parseSegments() {
+    var stop = false;
+    while (true) {
+      _parseSegment();
+      _createSegment();
+      switch (_ch) {
+        case _EOF:
+          stop = true;
+          break;
+      }
+
+      if (stop) {
+        break;
+      }
+    }
+  }
+
+  void _parseZeroOrMore() {
     _nextChar();
+    _segmentStrict = false;
+    var crossing = false;
     switch (_ch) {
-      case Ascii.ASTERISK:
-        _nextChar();
-        _crossing = true;
+      case "*":
+        crossing = true;
+        while (true) {
+          _nextChar();
+          if (_ch != "*") {
+            break;
+          }
+        }
+
+        crossing = true;
         break;
     }
 
-    var rules = _parseRules();
-    return new _GlobRuleZeroOrMore(rules);
+    if (crossing) {
+      _segmentCrossing = true;
+      _write(".*");
+    } else {
+      if (_firstInSegment) {
+        _write("(?![.])");
+      }
+
+      _write("[^/]*");
+    }
+
+    _firstInSegment = false;
   }
 
-  void _reset(int position) {
-    _commaDelimiter = false;
-    _crossing = false;
-    _position = position;
+  void _reset() {
+    expression = null;
+    _globCrossing = false;
+    _insideChoice = false;
+    _isAbsolute = false;
+    _gbuf = new StringBuffer();
+    _globStrict = true;
+    _length = _input.length;
+    _position = 0;
+    _segments = <GlobSegment>[];
     if (_position < _length) {
-      _ch = _input.codeUnitAt(_position);
+      _ch = _input[_position];
     } else {
       _position = _length;
       _ch = _EOF;
     }
+
+    _resetSegment();
+  }
+
+  void _resetSegment() {
+    _firstInSegment = true;
+    _sbuf = new StringBuffer();
+    _sbuf.write("^");
+    _segmentCrossing = false;
+    _segmentStart = _position;
+    _segmentStrict = true;
+  }
+
+  void _write(String string) {
+    _gbuf.write(string);
+    _sbuf.write(string);
   }
 }
 
-abstract class _GlobRule {
-  bool match(_GlobState state);
-}
+class _GlobCompilerResult {
+  bool isAbsolute;
 
-class _GlobRuleAny extends _GlobRule {
-  final count;
+  bool crossesDirectory;
 
-  _GlobRuleAny(this.count);
+  Pattern expression;
 
-  bool match(_GlobState state) {
-    if (state.position + count <= state.length) {
-      state.position += count;
-      return true;
-    }
-
-    return false;
-  }
-}
-
-class _GlobRuleCharacterClass extends _GlobRule {
-  final List<RangeList> ranges;
-
-  final bool not;
-
-  _GlobRuleCharacterClass(this.ranges, this.not);
-
-  bool match(_GlobState state) {
-    var position = state.position;
-    if (position < state.length) {
-      var charCode = state.intput.codeUnitAt(position);
-      var length = ranges.length;
-      for (var i = 0; i < length; i++) {
-        var range = ranges[i];
-        if (range.contains(charCode)) {
-          if (not) {
-            return false;
-          } else {
-            state.position++;
-            return true;
-          }
-        }
-      }
-    }
-
-    if (not) {
-      state.position++;
-      return true;
-    } else {
-      return false;
-    }
-  }
-}
-
-class _GlobRuleChoice extends _GlobRule {
-  final List<_GlobRule> rules;
-
-  _GlobRuleChoice(this.rules);
-
-  bool match(_GlobState state) {
-    var length = rules.length;
-    for (var i = 0; i < length; i++) {
-      var rule = rules[i];
-      if (rule.match(state)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-}
-
-class _GlobRuleLiteral extends _GlobRule {
-  final String literal;
-
-  _GlobRuleLiteral(this.literal);
-
-  bool match(_GlobState state) {
-    var count = literal.length;
-    var length = state.length;
-    var position = state.position;
-    if (position + count <= length) {
-      var input = state.intput;
-      var matches = true;
-      for (var i = 0; i < count; i++) {
-        var charCode = literal.codeUnitAt(i);
-        if (charCode != input.codeUnitAt(position + i)) {
-          return false;
-        }
-      }
-    } else {
-      return false;
-    }
-
-    state.position += count;
-    return true;
-  }
-}
-
-class _GlobRuleSequence extends _GlobRule {
-  final List<_GlobRule> rules;
-
-  _GlobRuleSequence(this.rules);
-
-  bool match(_GlobState state) {
-    var count = rules.length;
-    var matches = true;
-    var position = state.position;
-    for (var i = 0; i < count; i++) {
-      var rule = rules[i];
-      if (!rule.match(state)) {
-        matches = false;
-        break;
-      }
-    }
-
-    if (!matches) {
-      state.position = position;
-      return false;
-    }
-
-    return true;
-  }
-}
-
-class _GlobRuleZeroOrMore extends _GlobRule {
-  final List<_GlobRule> rules;
-
-  _GlobRuleZeroOrMore(this.rules);
-
-  bool match(_GlobState state) {
-    var count = rules.length;
-    if (count == 0) {
-      state.position = state.length;
-      return true;
-    }
-
-    var length = state.length;
-    var position = state.position;
-    for (var i = length - 1; i >= position; i--) {
-      var matches = true;
-      state.position = i;
-      for (var i = 0; i < count; i++) {
-        var rule = rules[i];
-        if (!rule.match(state)) {
-          matches = false;
-          break;
-        }
-      }
-
-      if (matches) {
-        return true;
-      }
-    }
-
-    state.position = position;
-    return false;
-  }
-}
-
-class _GlobState {
-  final String intput;
-
-  int length;
-
-  int position = 0;
-
-  _GlobState(String input)
-      : this.intput = input,
-        this.length = input.length;
+  List<GlobSegment> segments;
 }

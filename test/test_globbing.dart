@@ -4,10 +4,11 @@ import "package:unittest/unittest.dart";
 void main() {
   test();
   testCharacterClass();
-  testCanMatch();
   testCrossing();
   testDotglob();
+  testEscape();
   testExtension();
+  testMetachars();
 }
 
 void test() {
@@ -50,6 +51,7 @@ void test() {
 }
 
 void testCharacterClass() {
+  // "[0-9a]"
   var glob = new Glob("[0-9a]");
   var path = "5";
   var result = glob.match(path);
@@ -57,14 +59,20 @@ void testCharacterClass() {
   path = "a";
   result = glob.match(path);
   expect(result, true, reason: glob.pattern);
+
+  // "[!0-9]"
   glob = new Glob("[!0-9]");
   path = "5";
   result = glob.match(path);
   expect(result, false, reason: glob.pattern);
+
+  // "[]]"
   glob = new Glob("[]]");
   path = "]";
   result = glob.match(path);
   expect(result, true, reason: glob.pattern);
+
+  // "[]-]"
   glob = new Glob("[]-]");
   path = "-";
   result = glob.match(path);
@@ -72,6 +80,8 @@ void testCharacterClass() {
   path = "]";
   result = glob.match(path);
   expect(result, true, reason: glob.pattern);
+
+  // "[--0]"
   glob = new Glob("[--0]");
   path = "-";
   result = glob.match(path);
@@ -84,42 +94,26 @@ void testCharacterClass() {
   expect(result, true, reason: glob.pattern);
 }
 
-void testCanMatch() {
-  var glob = new Glob("/home/foo/baz");
-  var path = "/home/foo/baz";
-  var result = glob.canMatch(path);
-  expect(result, true, reason: glob.pattern);
-  glob = new Glob("/home/**/ab*");
-  path = "/home/foo/baz";
-  result = glob.canMatch(path);
-  expect(result, true, reason: glob.pattern);
-  glob = new Glob("/home/**a*/**b*/*.txt");
-  path = "/home/a1/a2/b1/b2";
-  result = glob.canMatch(path);
-  expect(result, true, reason: glob.pattern);
-  glob = new Glob("/home/**a*/**b*/*.txt");
-  path = "/home/a1/c2/b1";
-  result = glob.canMatch(path);
-  expect(result, false, reason: glob.pattern);
-  glob = new Glob("/home/**a*/**b*/**c*/*.txt");
-  path = "/home/a/ab/c";
-  result = glob.canMatch(path);
-  expect(result, true, reason: glob.pattern);
-}
-
 void testCrossing() {
+  // "/home/**/ab*"
   var glob = new Glob("/home/**/ab*");
   var path = "/home/foo/baz/abc";
   var result = glob.match(path);
   expect(result, true, reason: glob.pattern);
+
+  // "/home/**/ab*/**/def"
   glob = new Glob("/home/**/ab*/**/def");
   path = "/home/foo/abc/123/def";
   result = glob.match(path);
   expect(result, true, reason: glob.pattern);
+
+  // "/home/**/ab*/**/def"
   glob = new Glob("/home/**/ab*/**/def");
   path = "/home/foo/agc/123/def";
   result = glob.match(path);
   expect(result, false, reason: glob.pattern);
+
+  // "/home/**ab*/def"
   glob = new Glob("/home/**ab*/def");
   path = "/home/ab1/ab2/ab3/def";
   result = glob.match(path);
@@ -127,16 +121,75 @@ void testCrossing() {
 }
 
 void testDotglob() {
-  // TODO:
+  // *
+  var glob = new Glob("*");
+  var path = ".hidden";
+  var result = glob.match(path);
+  expect(result, false, reason: glob.pattern);
+  // .*
+  glob = new Glob(".*");
+  path = ".hidden";
+  result = glob.match(path);
+  expect(result, true, reason: glob.pattern);
+  // **
+  /*
+  glob = new Glob("*");
+  path = ".hidden/.hidden";
+  result = glob.match(path);
+  expect(result, false, reason: glob.pattern);
+  */
+}
+
+void testEscape() {
+  // '*'
+  var glob = new Glob(r"\*");
+  var path = "*";
+  var result = glob.match(path);
+  expect(result, true, reason: glob.pattern);
+
+  // '?'
+  glob = new Glob(r"\?");
+  path = "?";
+  result = glob.match(path);
+  expect(result, true, reason: glob.pattern);
+
+  // '['
+  glob = new Glob(r"\[");
+  path = "[";
+  result = glob.match(path);
+  expect(result, true, reason: glob.pattern);
+
+  // '{'
+  glob = new Glob(r"\{");
+  path = "{";
+  result = glob.match(path);
+  expect(result, true, reason: glob.pattern);
 }
 
 void testExtension() {
-  var glob = new Glob("/**/*.c");
-  var path = "/home/foo/baz/abc.c";
+  // "*.h"
+  var glob = new Glob("*.h");
+  var path = "stdio.h";
   var result = glob.match(path);
   expect(result, true, reason: glob.pattern);
-  glob = new Glob("a*.b*.*xt");
+
+  // "a*.b*.*xt"
+  glob = new Glob("foo/a*.b*.*xt");
   path = "foo/abc.baz.txt";
+  result = glob.match(path);
+  expect(result, true, reason: glob.pattern);
+}
+
+void testMetachars() {
+  // '('
+  var glob = new Glob("(");
+  var path = "(";
+  var result = glob.match(path);
+  expect(result, true, reason: glob.pattern);
+
+  // '\s'
+  glob = new Glob("\s");
+  path = "s";
   result = glob.match(path);
   expect(result, true, reason: glob.pattern);
 }

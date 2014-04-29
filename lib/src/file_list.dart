@@ -324,7 +324,6 @@ class _DirectoryLister {
           _files.add(path);
         }
 
-        _files.add(path);
         return;
       }
 

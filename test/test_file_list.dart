@@ -1,4 +1,5 @@
 import "dart:io";
+import "package:globbing/file_path.dart";
 import "package:globbing/file_list.dart";
 import "package:path/path.dart" as pathos;
 import "package:unittest/unittest.dart";
@@ -28,7 +29,7 @@ void testAbsolute() {
   }
 
   var files = new FileList(new Directory(path), mask);
-  var expected = ["file_list.dart", "globbing.dart"];
+  var expected = ["file_list.dart", "file_path.dart", "globbing.dart"];
   var result = <String>[];
   for (var file in files) {
     result.add(pathos.basename(file));
@@ -176,7 +177,7 @@ void testRelative() {
   // Path "/home/user/dart/globbing"
   // Mask "lib/src/*.dart"
   var files = new FileList(new Directory(path), mask);
-  var expected = ["file_list.dart", "globbing.dart"];
+  var expected = ["file_list.dart", "file_path.dart", "globbing.dart"];
   var result = <String>[];
   for (var file in files) {
     result.add(pathos.basename(file));
@@ -192,14 +193,8 @@ void testTilde() {
 
   // Path "/"
   // Mask "~/*/"
-  String home;
-  if (Platform.isWindows) {
-    home = Platform.environment["HOMEPATH"];
-  } else {
-    home = Platform.environment["HOME"];
-  }
-
-  if(home != null) {
+  var home = FilePath.expand("~");
+  if (home != null) {
     var files = new FileList(new Directory(home), mask);
     var result = !files.isEmpty;
     expect(result, true, reason: mask);

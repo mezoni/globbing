@@ -30,7 +30,7 @@ class FileList extends Object with ListMixin<String> {
       pattern = pattern.replaceAll("\\", "/");
     }
 
-    pattern = tilde(pattern);
+    pattern = FilePath.expand(pattern);
     _glob = new Glob(pattern, caseSensitive: caseSensitive);
     _files = _getFiles();
   }
@@ -49,7 +49,6 @@ class FileList extends Object with ListMixin<String> {
     throw new UnsupportedError("length=");
   }
 
-
   String operator [](int index) {
     return _files[index];
   }
@@ -58,44 +57,10 @@ class FileList extends Object with ListMixin<String> {
     throw new UnsupportedError("[]=");
   }
 
+
   List<String> _getFiles() {
     var lister = new _DirectoryLister(_glob);
     return lister.list(directory);
-  }
-
-  String tilde(String path) {
-    if (path == null || path.isEmpty) {
-      return path;
-    }
-
-    if (path[0] != "~") {
-      return path;
-    }
-
-    String home;
-    if (_isWindows) {
-      home = Platform.environment["HOMEPATH"];
-    } else {
-      home = Platform.environment["HOME"];
-    }
-
-    if (home == null || home.isEmpty) {
-      return path;
-    }
-
-    if (home.endsWith("/") || home.endsWith("\\")) {
-      home = home.substring(0, home.length - 1);
-    }
-
-    if (path == "~" || path == "~/") {
-      return home;
-    }
-
-    if (path.startsWith("~/")) {
-      return home + "/" + path.substring(2);
-    }
-
-    return path;
   }
 }
 

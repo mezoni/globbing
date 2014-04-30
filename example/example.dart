@@ -1,7 +1,22 @@
 import "dart:io";
 import "package:globbing/file_list.dart";
+import "package:globbing/file_path.dart";
 
 void main() {
+  // Directories in home directory, include hidden
+  var home = FilePath.expand("~");
+  var directory = new Directory(home);
+  var mask = "~/{.*,*}/";
+  var files = new FileList(directory, mask);
+  if (!files.isEmpty) {
+    var list = files.toList();
+    var length = list.length;
+    print("Found $length directories in $home");
+    for (var file in files) {
+      print(file);
+    }
+  }
+
   // Find "unittest" packages in "pub cache"
   var pubCache = getPubCachePath();
   if (pubCache != null) {
@@ -61,8 +76,10 @@ String getPubCachePath() {
       result = "$appData/Pub/Cache";
     }
   } else {
-    var home = Platform.environment["HOME"];
-    result = "$home/.pub-cache";
+    var home = FilePath.expand("~");
+    if(home != null) {
+      result = "$home/.pub-cache";
+    }
   }
 
   return result;

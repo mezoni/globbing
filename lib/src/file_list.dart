@@ -30,7 +30,7 @@ class FileList extends Object with ListMixin<String> {
       pattern = pattern.replaceAll("\\", "/");
     }
 
-    pattern = _tilde(pattern);
+    pattern = tilde(pattern);
     _glob = new Glob(pattern, caseSensitive: caseSensitive);
     _files = _getFiles();
   }
@@ -63,7 +63,7 @@ class FileList extends Object with ListMixin<String> {
     return lister.list(directory);
   }
 
-  String _tilde(String path) {
+  String tilde(String path) {
     if (path == null || path.isEmpty) {
       return path;
     }

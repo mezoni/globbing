@@ -1,6 +1,8 @@
 part of globbing.file_list;
 
 class FileList extends Object with ListMixin<String> {
+  static final bool _isWindows = Platform.isWindows;
+
   final Directory directory;
 
   List<String> _files;
@@ -16,19 +18,19 @@ class FileList extends Object with ListMixin<String> {
       throw new ArgumentError("files: $pattern");
     }
 
-    var isWindows = Platform.isWindows;
     if (caseSensitive == null) {
-      if (isWindows) {
+      if (_isWindows) {
         caseSensitive = false;
       } else {
         caseSensitive = true;
       }
     }
 
-    if (Platform.isWindows) {
+    if (_isWindows) {
       pattern = pattern.replaceAll("\\", "/");
     }
 
+    pattern = _tilde(pattern);
     _glob = new Glob(pattern, caseSensitive: caseSensitive);
     _files = _getFiles();
   }
@@ -59,6 +61,41 @@ class FileList extends Object with ListMixin<String> {
   List<String> _getFiles() {
     var lister = new _DirectoryLister(_glob);
     return lister.list(directory);
+  }
+
+  String _tilde(String path) {
+    if (path == null || path.isEmpty) {
+      return path;
+    }
+
+    if (path[0] != "~") {
+      return path;
+    }
+
+    String home;
+    if (_isWindows) {
+      home = Platform.environment["HOMEPATH"];
+    } else {
+      home = Platform.environment["HOME"];
+    }
+
+    if (home == null || home.isEmpty) {
+      return path;
+    }
+
+    if (home.endsWith("/") || home.endsWith("\\")) {
+      home = home.substring(0, home.length - 1);
+    }
+
+    if (path == "~" || path == "~/") {
+      return home;
+    }
+
+    if (path.startsWith("~/")) {
+      return home + "/" + path.substring(2);
+    }
+
+    return path;
   }
 }
 
@@ -112,13 +149,14 @@ class _DirectoryLister {
       }
     }
 
-    if (glob.isAbsolute) {
+    var isAbsolute = glob.isAbsolute;
+    if (isAbsolute) {
       _offset = 0;
     } else {
       _offset = directory.path.length;
     }
 
-    if (glob.isAbsolute) {
+    if (isAbsolute) {
       if (glob.crossesDirectory) {
         _listAbsoluteWithCrossing(directory);
       } else {

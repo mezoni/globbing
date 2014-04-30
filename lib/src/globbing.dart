@@ -345,7 +345,6 @@ class _GlobCompiler {
     return _ch;
   }
 
-  // TODO: "~"
   void _parse() {
     _gbuf.write("^");
     switch (_ch) {

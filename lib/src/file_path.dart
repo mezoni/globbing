@@ -22,7 +22,17 @@ class FilePath {
 
     String home;
     if (_isWindows) {
-      home = Platform.environment["HOMEPATH"];
+      var drive = Platform.environment["HOMEDRIVE"];
+      var path = Platform.environment["HOMEPATH"];
+      if (drive != null && !drive.isEmpty && path != null && !path.isEmpty) {
+        home = drive + path;
+      } else {
+        home = Platform.environment["USERPROFILE"];
+        if (home == null || home.isEmpty) {
+          home = Platform.environment["USERPROFILE"];
+        }
+      }
+
     } else {
       home = Platform.environment["HOME"];
     }

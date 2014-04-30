@@ -7,9 +7,16 @@ void main() {
 }
 
 void testExpand() {
-  // $key
-  var key = Platform.environment.keys.first;
+  String key;
+  if(Platform.isWindows) {
+    key = "HOMEPATH";
+  } else {
+    key = "HOME";
+  }
+
   var value = Platform.environment[key];
+
+  // $key
   var path = "\$${key}";
   var result = FilePath.expand(path);
   var expected = value;
@@ -64,7 +71,7 @@ void testExpand() {
   expect(result, expected, reason: path);
 
   // $HOMElower/1
-  path = "\$HOMElower/1";
+  path = "\$${key}lower/1";
   var home = FilePath.expand("~");
   result = FilePath.expand(path);
   expected = "${home}lower/1";

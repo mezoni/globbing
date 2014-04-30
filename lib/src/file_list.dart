@@ -196,11 +196,15 @@ class _DirectoryLister {
       directory = new Directory(path);
       var dirExists = directory.existsSync();
       var fileExists = false;
+      var linkExists = false;
       if (!dirExists) {
         fileExists = new File(path).existsSync();
+        if (!fileExists) {
+          linkExists = new Link(path).existsSync();
+        }
       }
 
-      if (!(dirExists || fileExists)) {
+      if (!(dirExists || fileExists || linkExists)) {
         return;
       }
 
@@ -305,11 +309,15 @@ class _DirectoryLister {
       directory = new Directory(path);
       var dirExists = directory.existsSync();
       var fileExists = false;
+      var linkExists = false;
       if (!dirExists) {
         fileExists = new File(path).existsSync();
+        if (!fileExists) {
+          linkExists = new Link(path).existsSync();
+        }
       }
 
-      if (!(dirExists || fileExists)) {
+      if (!(dirExists || fileExists || linkExists)) {
         return;
       }
 

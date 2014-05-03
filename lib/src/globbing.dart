@@ -155,6 +155,9 @@ class _GlobCompiler {
   static const String _MESSAGE_CHOICE_SHOULD_CONTAINS_AT_LEAST_TWO_ELEMENTS =
       "Choice should contains at least two elements";
 
+  static const String _MESSAGE_CROSSING_DIRECTORY_NOT_ALLOWED_IN_CHOICE =
+      "Crossing the directory '**' not allowed in choice";
+
   static const String _MESSAGE_RANGE_OUT_OF_ORDER_IN_CHARACTER_CLASS =
       "Range out of order in character class";
 
@@ -677,6 +680,11 @@ class _GlobCompiler {
     var crossing = false;
     switch (_ch) {
       case "*":
+        if (_insideChoice) {
+          var message = _MESSAGE_CROSSING_DIRECTORY_NOT_ALLOWED_IN_CHOICE;
+          _error(message, _position - 1);
+        }
+
         crossing = true;
         while (true) {
           _nextChar();
@@ -689,14 +697,14 @@ class _GlobCompiler {
         break;
     }
 
+    if (_firstInSegment) {
+      _write("(?![.])");
+    }
+
     if (crossing) {
       _segmentCrossing = true;
       _write(".*");
     } else {
-      if (_firstInSegment) {
-        _write("(?![.])");
-      }
-
       _write("[^/]*");
     }
 

@@ -2,6 +2,7 @@ import "package:globbing/globbing.dart";
 import "package:unittest/unittest.dart";
 
 void main() {
+  new Glob("[!a]");
   test();
   testCharacterClass();
   testChoice();
@@ -66,6 +67,12 @@ void testCharacterClass() {
   path = "5";
   result = glob.match(path);
   expect(result, false, reason: glob.pattern);
+
+  // "[-]"
+  glob = new Glob("[-]");
+  path = "-";
+  result = glob.match(path);
+  expect(result, true, reason: glob.pattern);
 
   // "[]]"
   glob = new Glob("[]]");

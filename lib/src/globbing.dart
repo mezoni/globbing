@@ -147,16 +147,8 @@ class GlobSegment implements Pattern {
 }
 
 class _GlobCompiler {
-  static const String _EOF = "";
-
   static const String _MESSAGE_CANNOT_ESCAPE_SLASH_CHARACTER =
       "Cannot escape slash '/' character";
-
-  static const String _MESSAGE_CHOICE_SHOULD_CONTAINS_AT_LEAST_TWO_ELEMENTS =
-      "Choice should contains at least two elements";
-
-  static const String _MESSAGE_CROSSING_DIRECTORY_NOT_ALLOWED_IN_CHOICE =
-      "Crossing the directory '**' not allowed in choice";
 
   static const String _MESSAGE_RANGE_OUT_OF_ORDER_IN_CHARACTER_CLASS =
       "Range out of order in character class";
@@ -164,261 +156,235 @@ class _GlobCompiler {
   static const String _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS =
       "Explicit slash '/' not allowed in character class";
 
-  static const String _MESSAGE_SLASH_NOT_ALLOWED_IN_CHOICE =
-      "Explicit slash '/' not allowed in choice";
-
   static const String _MESSAGE_UNTERMINATED_BACKSLASH_SEQUENCE =
       "Unterminated backslash '\\' escape sequence";
 
   static const String _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS =
       "Unexpected end of character class";
 
-  static const String _MESSAGE_UNEXPECTED_END_OF_CHOICE =
-      "Unexpected end of choice";
-
-  Pattern expression;
-
   bool _caseSensitive;
 
-  String _ch;
-
-  bool _firstInSegment;
-
-  StringBuffer _gbuf;
-
-  bool _globCrossing;
-
-  bool _globStrict;
+  StringBuffer _globalBuffer;
 
   String _input;
 
-  bool _insideChoice;
-
-  bool _isAbsolute;
-
-  int _length;
-
-  int _position;
-
-  StringBuffer _sbuf;
-
-  bool _segmentCrossing;
-
-  List<GlobSegment> _segments;
-
-  int _segmentStart;
-
-  bool _segmentStrict;
+  StringBuffer _segmentBuffer;
 
   _GlobCompilerResult compile(String input, {bool caseSensitive: true}) {
     if (input == null) {
       throw new ArgumentError("input: $input");
     }
 
-    this._input = input;
-    this._caseSensitive = caseSensitive;
+    if (caseSensitive == null) {
+      throw new ArgumentError("caseSensitive: $caseSensitive");
+    }
+
+    _caseSensitive = caseSensitive;
+    _input = input;
+    return _compile();
+  }
+
+  _compile() {
     _reset();
-    _parse();
-    var source = _gbuf.toString();
+    var paser = new GlobParser();
+    var node = paser.parse(_input);
+    var segments = _compileSegments(node.nodes);
     var result = new _GlobCompilerResult();
-    result.crossesDirectory = _globCrossing;
-    result.expression = new RegExp(source, caseSensitive: caseSensitive);
-    result.isAbsolute = _isAbsolute;
-    result.segments = _segments;
+    result.crossesDirectory = node.crossesDirectory;
+    result.expression = new RegExp(_globalBuffer.toString(), caseSensitive:
+        _caseSensitive);
+    result.isAbsolute = node.isAbsolute;
+    result.segments = segments;
     return result;
   }
 
-  bool _alpha(String s) {
-    if (s.isEmpty) {
-      return false;
+  void _compileAsterisk(GlobNodeAsterisk node, bool first) {
+    if (first) {
+      _write("(?![.])");
     }
 
-    var c = s.codeUnitAt(0);
-    if (c >= 65 && c <= 90 || c >= 97 && c <= 122) {
-      return true;
-    }
-
-    return false;
+    _write("[^/]*");
   }
 
-  GlobSegment _createSegment() {
-    if (_segmentCrossing) {
-      _globCrossing = true;
+  void _compileAsterisks(GlobNodeAsterisks node, bool first) {
+    if (first) {
+      _write("(?![.])");
     }
 
-    if (!_segmentStrict) {
-      _globStrict = false;
-    }
+    _write(".*");
+  }
 
-    var text = _input.substring(_segmentStart, _position);
-    var trailingSlash = false;
-    if (_ch == "/") {
-      while (true) {
-        _nextChar();
-        if (_ch != "/") {
+  void _compileBrace(GlobNodeBrace node, bool first) {
+    _write("(?:");
+    var nodes = node.nodes;
+    var length = nodes.length;
+    for (var i = 0; i < length; i++) {
+      var element = nodes[i];
+      switch (element.type) {
+        case GlobNodeTypes.ASTERISK:
+          _compileAsterisk(element, first);
           break;
-        }
+        case GlobNodeTypes.ASTERISKS:
+          _compileAsterisks(element, first);
+          break;
+        case GlobNodeTypes.BRACE:
+          _compileBrace(element, first);
+          break;
+        case GlobNodeTypes.CHARACTER_CLASS:
+          _compileCharacterClass(element);
+          break;
+        case GlobNodeTypes.LITERAL:
+          _compileLiteral(element);
+          break;
+        case GlobNodeTypes.QUESTION:
+          _compileQuestion(element);
+          break;
+        default:
+          _errorIllegalElement(node, element);
       }
 
-      _gbuf.write("/");
-      if (_ch == _EOF) {
-        trailingSlash = true;
+      first = false;
+      if (i < length - 1) {
+        _write("|");
       }
     }
 
-    _sbuf.write("\$");
-    var source = _sbuf.toString();
-    var expression = new RegExp(source, caseSensitive: _caseSensitive);
-    var segment = new GlobSegment(text, expression, crossesDirectory:
-        _segmentCrossing, strict: _segmentStrict, onlyDirectory: trailingSlash);
-    _segments.add(segment);
-    _resetSegment();
-    return segment;
+    _write(")");
   }
 
-  void _error(String message, int position) {
-    throw new FormatException(
-        "(column: ${position + 1}), $message in '$_input'.");
-  }
-
-  int _escapeRangeCharacter() {
-    int charCode;
-    switch (_ch) {
-      case _EOF:
-        var message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
-        _error(message, _position - 1);
-        break;
-      case "/":
-        var message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS;
-        _error(message, _position);
-        break;
-      case "\\":
-        _nextChar();
-        switch (_ch) {
-          case _EOF:
+  void _compileCharacterClass(GlobNodeCharacterClass node) {
+    var ch = "";
+    var source = node.source;
+    var length = source.length;
+    var position = 0;
+    var escapeCharacter = () {
+      switch (ch) {
+        case "/":
+          var message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS;
+          _error(message, node.position + position);
+          break;
+        case "\\":
+          if (position >= length) {
             var message = _MESSAGE_UNTERMINATED_BACKSLASH_SEQUENCE;
-            _error(message, _position - 1);
-            break;
-          case "/":
-            var message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS;
-            _error(message, _position);
-            break;
-          default:
-            charCode = _ch.codeUnitAt(0);
-            _write("\\");
-            _write(_ch);
-            _nextChar();
-            break;
-        }
-
-        break;
-      case "^":
-        charCode = _ch.codeUnitAt(0);
-        _write("\\");
-        _write(_ch);
-        _nextChar();
-        break;
-      default:
-        charCode = _ch.codeUnitAt(0);
-        _write(_ch);
-        _nextChar();
-        break;
-    }
-
-    return charCode;
-  }
-
-  String _lookup(int offset) {
-    var position = _position + offset;
-    if (position < _length) {
-      return _input[position];
-    }
-
-    return _EOF;
-  }
-
-  String _nextChar() {
-    if (_position + 1 >= _length) {
-      _ch = _EOF;
-      _position = _length;
-      return _EOF;
-    }
-
-    _ch = _input[++_position];
-    return _ch;
-  }
-
-  void _parse() {
-    _gbuf.write("^");
-    switch (_ch) {
-      case _EOF:
-        break;
-      case "/":
-        _write("/");
-        while (true) {
-          _nextChar();
-          if (_ch != "/") {
-            break;
+            _error(message, node.position + position);
           }
-        }
 
-        _isAbsolute = true;
-        _createSegment();
-        break;
-      default:
-        if (_alpha(_ch) && _lookup(1) == ":" && _lookup(2) == "/") {
-          _write(_ch);
-          _write(":/");
-          _isAbsolute = true;
-          _position += 2;
-          _nextChar();
-          _createSegment();
-        }
+          ch = source[position++];
+          switch (ch) {
+            case "/":
+              var message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS;
+              _error(message, node.position + position);
+              break;
+            default:
+              _write("\\");
+              _write(ch);
+              break;
+          }
 
-        break;
+          break;
+        case "^":
+          _write(ch);
+          break;
+        default:
+          _write(ch);
+          break;
+      }
+
+      var result = ch.codeUnitAt(0);
+      if (position < length) {
+        ch = source[position++];
+      } else {
+        ch = "";
+      }
+
+      return result;
+    };
+
+    if (position < length) {
+      ch = source[position++];
     }
 
-    if (_ch != _EOF) {
-      _parseSegments();
+    if (ch != "[") {
+      _errorIllegalStartOrEndCharacter(node.type, "starts", "[", 0);
     }
 
-    _gbuf.write("\$");
-  }
-
-  void _parseCharacterClass() {
-    _nextChar();
-    _firstInSegment = false;
-    _segmentStrict = false;
-    var position = _position;
     _write("[");
-    if (_ch == "!") {
+    ch = source[position++];
+    if (ch == "!") {
       _write("^");
-      _nextChar();
+      if (position < length) {
+        ch = source[position++];
+      } else {
+        var message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
+        _error(message, node.position + position);
+      }
     }
 
-    if (_ch == "]") {
+    if (ch == "]") {
       _write("\\]-\\]'");
-      _nextChar();
+      if (position < length) {
+        ch = source[position++];
+      } else {
+        var message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
+        _error(message, node.position + position);
+      }
     }
 
     var stop = false;
     while (true) {
-      switch (_ch) {
+      if (ch == "") {
+        _errorIllegalStartOrEndCharacter(node.type, "ends", "]", 0);
+      }
+
+      switch (ch) {
         case "/":
           var message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS;
-          _error(message, _position);
-          break;
-        case _EOF:
-          var message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
-          _error(message, _position);
+          _error(message, node.position + 1 + position);
           break;
         case "]":
-          _nextChar();
+          if (position != length) {
+            _errorIllegalStartOrEndCharacter(node.type, "ends", "]", 0);
+          }
+
           stop = true;
           break;
         default:
-          _parseRange();
-          break;
+          if (ch == "-") {
+            if (position < length) {
+              if (source[position] == "]") {
+                ch = "]";
+                position++;
+                _write("-");
+                break;
+              }
+            }
+          }
+
+          int start = escapeCharacter();
+          var end = start;
+          switch (ch) {
+            case "-":
+              if (position >= length) {
+                var message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
+                _error(message, node.position + position);
+
+              }
+
+              ch = source[position++];
+              if (ch == "]") {
+                position -= 2;
+                ch = source[position];
+              } else {
+                _write("-");
+                end = escapeCharacter();
+                if (start > end) {
+                  var message = _MESSAGE_RANGE_OUT_OF_ORDER_IN_CHARACTER_CLASS;
+                  _error(message, position);
+                }
+              }
+
+              break;
+          }
       }
 
       if (stop) {
@@ -429,114 +395,28 @@ class _GlobCompiler {
     _write("]");
   }
 
-  void _parseChoice() {
-    _nextChar();
-    _segmentStrict = false;
-    _write("(?:");
-    var empty = true;
-    var insideChoice = _insideChoice;
-    var firstInSegment = _firstInSegment;
-    var stop = false;
-    _insideChoice = true;
+  void _compileLiteral(GlobNodeLiteral node) {
+    var source = node.source;
+    var length = source.length;
+    var position = 0;
     while (true) {
-      switch (_ch) {
-        case _EOF:
-          var message = _MESSAGE_UNEXPECTED_END_OF_CHOICE;
-          _error(message, _position - 1);
-          break;
-        case "/":
-          var message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHOICE;
-          _error(message, _position);
-          break;
-        case ",":
-          _nextChar();
-          _write("|");
-          if (_ch == "}") {
-            _nextChar();
-            stop = true;
-          } else {
-            _firstInSegment = firstInSegment;
-          }
-
-          empty = false;
-          break;
-        case "}":
-          _nextChar();
-          stop = true;
-          break;
-        default:
-          _parseChoiceElement();
-          break;
+      if (position == length) {
+        break;
       }
 
-      if (stop) {
-        break;
-      }
-    }
-
-    if (empty) {
-      var message = _MESSAGE_CHOICE_SHOULD_CONTAINS_AT_LEAST_TWO_ELEMENTS;
-      _error(message, _position - 1);
-    }
-
-    _insideChoice = insideChoice;
-    _write(")");
-  }
-
-  void _parseChoiceElement() {
-    switch (_ch) {
-      case "*":
-        _parseZeroOrMore();
-        break;
-      case "?":
-        _parseOneOrMore();
-        break;
-      case "[":
-        _parseCharacterClass();
-        break;
-      case "{":
-        _parseChoice();
-        break;
-      default:
-        _parseLiteral();
-        break;
-    }
-  }
-
-  void _parseLiteral() {
-    _firstInSegment = false;
-    var stop = false;
-    while (true) {
-      switch (_ch) {
-        case _EOF:
-        case "*":
-        case "{":
-        case "[":
-        case "}":
-        case "?":
-        case "/":
-          stop = true;
-          break;
-        case ",":
-          if (_insideChoice) {
-            stop = true;
-          } else {
-            _write(_ch);
-            _nextChar();
-          }
-
-          break;
+      var ch = source[position++];
+      switch (ch) {
         case "\\":
-          _nextChar();
-          if (_ch == _EOF) {
+          if (position == length) {
             var message = _MESSAGE_UNTERMINATED_BACKSLASH_SEQUENCE;
-            _error(message, _position - 1);
+            _error(message, node.position + position);
           }
 
-          switch (_ch) {
+          ch = source[position++];
+          switch (ch) {
             case "/":
               var message = _MESSAGE_CANNOT_ESCAPE_SLASH_CHARACTER;
-              _error(message, _position);
+              _error(message, node.position + position);
               break;
             case "*":
             case "{":
@@ -544,205 +424,156 @@ class _GlobCompiler {
             case "?":
             case "}":
               _write("\\");
-              _write(_ch);
-              _nextChar();
+              _write(ch);
               break;
             case "\\":
               _write("\\");
-              _write(_ch);
-              _nextChar();
+              _write(ch);
               break;
             default:
-              break;
+              _write(ch);
           }
 
           break;
-        case "^":
         case "\$":
         case "(":
-        case ".":
-        case "+":
         case ")":
-        case "|":
-          _write("\\");
-          _write(_ch);
-          _nextChar();
-          break;
-        default:
-          _write(_ch);
-          _nextChar();
-          break;
-      }
-
-      if (stop) {
-        break;
-      }
-    }
-  }
-
-  void _parseOneOrMore() {
-    _firstInSegment = false;
-    _segmentStrict = false;
-    var count = 1;
-    while (true) {
-      _nextChar();
-      if (_ch != "?") {
-        break;
-      }
-
-      count++;
-    }
-
-    _write(".{");
-    _write(count.toRadixString(10));
-    _write("}");
-  }
-
-  void _parseRange() {
-    var position = _position;
-    var start = _escapeRangeCharacter();
-    var end = start;
-    switch (_ch) {
-      case "-":
-        _nextChar();
-        if (_ch == _EOF) {
-          var message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
-          _error(message, _position - 1);
-          return;
-        } else if (_ch == "]") {
-          _position -= 2;
-          _nextChar();
-        } else {
-          _write("-");
-          end = _escapeRangeCharacter();
-        }
-
-        break;
-    }
-
-    if (start > end) {
-      var message = _MESSAGE_RANGE_OUT_OF_ORDER_IN_CHARACTER_CLASS;
-      _error(message, position);
-    }
-  }
-
-  void _parseSegment() {
-    var stop = false;
-    while (true) {
-      switch (_ch) {
-        case _EOF:
-        case "/":
-          stop = true;
-          break;
         case "*":
-          _parseZeroOrMore();
-          break;
+        case "+":
+        case ".":
         case "?":
-          _parseOneOrMore();
-          break;
         case "[":
-          _parseCharacterClass();
-          break;
+        case "]":
+        case "^":
         case "{":
-          _parseChoice();
+        case "|":
+        case "}":
+          _write("\\");
+          _write(ch);
           break;
         default:
-          _parseLiteral();
+          _write(ch);
           break;
-      }
-
-      if (stop) {
-        break;
       }
     }
   }
 
-  void _parseSegments() {
-    var stop = false;
-    while (true) {
-      _parseSegment();
-      _createSegment();
-      switch (_ch) {
-        case _EOF:
-          stop = true;
-          break;
-      }
-
-      if (stop) {
-        break;
-      }
-    }
+  void _compileQuestion(GlobNodeQuestion node) {
+    _write(".");
   }
 
-  void _parseZeroOrMore() {
-    _nextChar();
-    _segmentStrict = false;
-    var crossing = false;
-    switch (_ch) {
-      case "*":
-        if (_insideChoice) {
-          var message = _MESSAGE_CROSSING_DIRECTORY_NOT_ALLOWED_IN_CHOICE;
-          _error(message, _position - 1);
+  GlobSegment _compileSegment(GlobNodeSegment node) {
+    _resetSegment();
+    var first = true;
+    for (var element in node.nodes) {
+      switch (element.type) {
+        case GlobNodeTypes.ASTERISK:
+          _compileAsterisk(element, first);
+          break;
+        case GlobNodeTypes.ASTERISKS:
+          _compileAsterisks(element, first);
+          break;
+        case GlobNodeTypes.BRACE:
+          _compileBrace(element, first);
+          break;
+        case GlobNodeTypes.CHARACTER_CLASS:
+          _compileCharacterClass(element);
+          break;
+        case GlobNodeTypes.LITERAL:
+          _compileLiteral(element);
+          break;
+        case GlobNodeTypes.QUESTION:
+          _compileQuestion(element);
+          break;
+        default:
+          _errorIllegalElement(node, element);
+      }
+
+      first = false;
+    }
+
+    var pattern = _segmentBuffer.toString();
+    var expression = new RegExp(pattern, caseSensitive: _caseSensitive);
+    var crossesDirectory = node.crossesDirectory;
+    var onlyDirector = node.onlyDirectory;
+    var source = node.source;
+    var strict = node.strict;
+    var segment = new GlobSegment(source, expression, crossesDirectory:
+        crossesDirectory, onlyDirectory: onlyDirector, strict: strict);
+    return segment;
+  }
+
+  List<GlobSegment> _compileSegments(List<GlobNodeSegment> nodes) {
+    _globalBuffer.write("^");
+    var segments = new List<GlobSegment>();
+    var length = nodes.length;
+    for (var i = 0; i < length; i++) {
+      var node = nodes[i];
+      switch (node.type) {
+        case GlobNodeTypes.SEGMENT:
+          var segment = _compileSegment(node);
+          segments.add(segment);
+          break;
+        default:
+          throw new StateError("Illegal node: '$node'.");
+          break;
+      }
+      if (i < length - 1) {
+        if (!node.isRoot) {
+          _globalBuffer.write("/");
         }
-
-        crossing = true;
-        while (true) {
-          _nextChar();
-          if (_ch != "*") {
-            break;
-          }
-        }
-
-        crossing = true;
-        break;
+      }
     }
 
-    if (_firstInSegment) {
-      _write("(?![.])");
+    _globalBuffer.write("\$");
+    return segments;
+  }
+
+  void _error(String message, int position) {
+    throw new FormatException(
+        "(column: ${position + 1}), $message in '$_input'.");
+  }
+
+  void _errorIllegalElement(GlobNode owner, GlobNode element) {
+    var position = owner.position;
+    var elementType = "<null>";
+    if (element != null) {
+      elementType = element.type.toString();
+      position = element.position;
     }
 
-    if (crossing) {
-      _segmentCrossing = true;
-      _write(".*");
-    } else {
-      _write("[^/]*");
+    var ownerType = owner.type;
+    var message = "Illegal element '$elementType' in $ownerType node '$owner'";
+    _error(message, position);
+  }
+
+  void _errorIllegalStartOrEndCharacter(GlobNodeTypes type, String
+      should, String ch, int position) {
+    var message = "'$type' should $should with '$ch'";
+    _error(message, position);
+  }
+
+  String _lookup(String source, int position, int offset) {
+    var index = position + offset;
+    if (index < source.length) {
+      return source[index];
     }
 
-    _firstInSegment = false;
+    return "";
   }
 
   void _reset() {
-    expression = null;
-    _globCrossing = false;
-    _insideChoice = false;
-    _isAbsolute = false;
-    _gbuf = new StringBuffer();
-    _globStrict = true;
-    _length = _input.length;
-    _position = 0;
-    _segments = <GlobSegment>[];
-    if (_position < _length) {
-      _ch = _input[_position];
-    } else {
-      _position = _length;
-      _ch = _EOF;
-    }
-
-    _resetSegment();
+    _globalBuffer = new StringBuffer();
   }
 
   void _resetSegment() {
-    _firstInSegment = true;
-    _sbuf = new StringBuffer();
-    _sbuf.write("^");
-    _segmentCrossing = false;
-    _segmentStart = _position;
-    _segmentStrict = true;
+    _segmentBuffer = new StringBuffer();
+    _segmentBuffer.write("^");
   }
 
   void _write(String string) {
-    _gbuf.write(string);
-    _sbuf.write(string);
+    _globalBuffer.write(string);
+    _segmentBuffer.write(string);
   }
 }
 

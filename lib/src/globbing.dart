@@ -492,6 +492,7 @@ class _GlobCompiler {
       first = false;
     }
 
+    _segmentBuffer.write("\$");
     var pattern = _segmentBuffer.toString();
     var expression = new RegExp(pattern, caseSensitive: _caseSensitive);
     var crossesDirectory = node.crossesDirectory;

@@ -186,8 +186,8 @@ class _GlobCompiler {
 
   _compile() {
     _reset();
-    var paser = new GlobParser();
-    var node = paser.parse(_input);
+    var parser = new GlobParser();
+    var node = parser.parse(_input);
     var segments = _compileSegments(node.nodes);
     var result = new _GlobCompilerResult();
     result.crossesDirectory = node.crossesDirectory;

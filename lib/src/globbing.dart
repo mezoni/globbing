@@ -1,8 +1,14 @@
 part of globbing;
 
 class Glob implements Pattern {
+  /**
+   * True, if the pattern is case sensitive; otherwise false.
+   */
   final bool caseSensitive;
 
+  /**
+   * Pattern for this glob.
+   */
   final String pattern;
 
   bool _crossesDirectory;
@@ -13,6 +19,15 @@ class Glob implements Pattern {
 
   List<GlobSegment> _segments;
 
+  /**
+   * Creates the glob.
+   *
+   * Parameters:
+   *  [pattern]
+   *   Pattern for this glob.
+   *  [caseSensitive]
+   *   True, if the pattern is case sensitive; otherwise false.
+   */
   Glob(this.pattern, {this.caseSensitive: true}) {
     if (pattern == null) {
       throw new ArgumentError("pattern: $pattern");

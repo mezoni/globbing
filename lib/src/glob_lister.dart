@@ -1,6 +1,9 @@
 part of globbing.glob_lister;
 
 class GlobLister {
+  /**
+   * Pattern of this glob lister.
+   */
   final String pattern;
 
   bool _caseSensitive;
@@ -27,6 +30,25 @@ class GlobLister {
 
   bool _useStrict;
 
+  /**
+   * Creates the glob lister.
+   *
+   * Parameters:
+   *  [pattern]
+   *   Pattern of this glob lister.
+   *  [caseSensitive]
+   *   True, if the pattern is case sensitive; otherwise false.
+   *  [exists]
+   *   Function that determines that the specified path exists or not.
+   *  [followLinks]
+   *   True, if lister should follow symbolic links; otherwise false.
+   *  [isDirectory]
+   *    Function that determines that the specified path is a directory or not.
+   *  [isWindows]
+   *   True, if used the path in the Windows style; otherwise false.
+   *  [list]
+   *   Function that lists the specified directory.
+   */
   GlobLister(this.pattern, {bool caseSensitive, bool exists(String path), bool
       followLinks: true, bool isDirectory(String path), bool isWindows, List<String>
       list(String path, bool followLinks)}) {

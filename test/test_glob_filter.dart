@@ -14,6 +14,7 @@ void testExclude() {
 
   //
   var appRoot = Directory.current.parent.path;
+  appRoot = appRoot.replaceAll("\\", "/");
   var pattern = appRoot + "/lib/**/*.dart";
   var lister = _getLister(pattern);
   var list = lister.list(Directory.current.parent.path);
@@ -33,6 +34,7 @@ void testInclude() {
 
   //
   var appRoot = Directory.current.parent.path;
+  appRoot = appRoot.replaceAll("\\", "/");
   var pattern = appRoot + "/lib/**/*.dart";
   var lister = _getLister(pattern);
   var list = lister.list(Directory.current.parent.path);

@@ -144,11 +144,11 @@ class GlobLister {
   }
 
   void _listAbsoluteWithCrossing(String path) {
-    var pathSegments = pathos.split(path);
     if (_isWindows) {
       path = path.replaceAll("\\", "/");
     }
 
+    var pathSegments = pathos.split(path);
     var length = pathSegments.length;
     if (length > _segments.length) {
       length = _segments.length;

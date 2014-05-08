@@ -50,12 +50,10 @@ class GlobLister {
    *   True, if used the path in the Windows style; otherwise false.
    *  [list]
    *   Function that lists the specified directory.
-   *  [notify]
-   *   A function that is called whenever an item is added.
    */
   GlobLister(this.pattern, {bool caseSensitive, bool exists(String path), bool
       followLinks: true, bool isDirectory(String path), bool isWindows, List<String>
-      list(String path, bool followLinks), void notify(String path)}) {
+      list(String path, bool followLinks)}) {
     if (pattern == null) {
       throw new ArgumentError("pattern: $pattern");
     }
@@ -94,7 +92,6 @@ class GlobLister {
     _isDirectory = isDirectory;
     _isWindows = isWindows;
     _list = list;
-    _notify = notify;
     _glob = new Glob(pattern, caseSensitive: caseSensitive);
     _segments = _glob.segments;
     if (!_segments.isEmpty) {
@@ -104,12 +101,22 @@ class GlobLister {
     }
   }
 
-  List<String> list(String directory) {
+  /**
+   * Lists the directory and returns content of this directory.
+   *
+   * Parameters:
+   *  [directory]
+   *   Directory wich will be listed.
+   *  [notify]
+   *   A function that is called whenever an item is added.
+   */
+  List<String> list(String directory, {void notify(String path)}) {
     _files = <String>[];
     if (!_isDirectory(directory)) {
       return _files;
     }
 
+    _notify = notify;
     if (_caseSensitive) {
       if (_isWindows) {
         _useStrict = false;

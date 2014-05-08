@@ -66,8 +66,13 @@ class GlobFilter {
    * Parameters:
    *  [list]
    *   List of paths.
+   *  [added]
+   *   A function that is called whenever an item is added.
+   *  [removed]
+   *   A function that is called whenever an item is removed.
    */
-  List<String> exclude(List<String> list) {
+  List<String> exclude(List<String> list, {void added(String path), void
+      removed(String path)}) {
     if (list == null) {
       throw new ArgumentError("list: $list");
     }
@@ -85,6 +90,13 @@ class GlobFilter {
 
       if (!_glob.match(path)) {
         result.add(element);
+        if (added != null) {
+          added(path);
+        }
+      } else {
+        if (removed != null) {
+          removed(path);
+        }
       }
     }
 
@@ -98,8 +110,13 @@ class GlobFilter {
    * Parameters:
    *  [list]
    *   List of paths.
+   *  [added]
+   *   A function that is called whenever an item is added.
+   *  [removed]
+   *   A function that is called whenever an item is removed.
    */
-  List<String> include(List<String> list) {
+  List<String> include(List<String> list, {void added(String path), void
+      removed(String path)}) {
     if (list == null) {
       throw new ArgumentError("list: $list");
     }
@@ -117,6 +134,13 @@ class GlobFilter {
 
       if (_glob.match(path)) {
         result.add(element);
+        if (added != null) {
+          added(path);
+        }
+      } else {
+        if (removed != null) {
+          removed(path);
+        }
       }
     }
 

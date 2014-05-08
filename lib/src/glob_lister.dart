@@ -22,6 +22,8 @@ class GlobLister {
 
   Function _list;
 
+  Function _notify;
+
   int _offset;
 
   bool _onlyDirectory;
@@ -48,10 +50,12 @@ class GlobLister {
    *   True, if used the path in the Windows style; otherwise false.
    *  [list]
    *   Function that lists the specified directory.
+   *  [notify]
+   *   A function that is called whenever an item is added.
    */
   GlobLister(this.pattern, {bool caseSensitive, bool exists(String path), bool
       followLinks: true, bool isDirectory(String path), bool isWindows, List<String>
-      list(String path, bool followLinks)}) {
+      list(String path, bool followLinks), void notify(String path)}) {
     if (pattern == null) {
       throw new ArgumentError("pattern: $pattern");
     }
@@ -90,6 +94,7 @@ class GlobLister {
     _isDirectory = isDirectory;
     _isWindows = isWindows;
     _list = list;
+    _notify = notify;
     _glob = new Glob(pattern, caseSensitive: caseSensitive);
     _segments = _glob.segments;
     if (!_segments.isEmpty) {
@@ -205,6 +210,9 @@ class GlobLister {
 
       if (exists) {
         _files.add(path);
+        if (_notify != null) {
+          _notify(path);
+        }
       }
 
       return;
@@ -237,10 +245,16 @@ class GlobLister {
         if (segment.onlyDirectory) {
           if (dirExists) {
             _files.add(path);
+            if (_notify != null) {
+              _notify(path);
+            }
           }
 
         } else {
           _files.add(path);
+          if (_notify != null) {
+            _notify(path);
+          }
         }
 
         return;
@@ -283,10 +297,16 @@ class GlobLister {
         if (segment.onlyDirectory) {
           if (isDirectory) {
             _files.add(entryPath);
+            if (_notify != null) {
+              _notify(path);
+            }
           }
 
         } else {
           _files.add(entryPath);
+          if (_notify != null) {
+            _notify(path);
+          }
         }
 
         continue;
@@ -317,12 +337,18 @@ class GlobLister {
           relativePath += "/";
           if (_glob.match(relativePath)) {
             _files.add(entryPath);
+            if (_notify != null) {
+              _notify(path);
+            }
           }
         }
 
       } else {
         if (_glob.match(relativePath)) {
           _files.add(entryPath);
+          if (_notify != null) {
+            _notify(path);
+          }
         }
       }
 
@@ -354,10 +380,16 @@ class GlobLister {
         if (segment.onlyDirectory) {
           if (dirExists) {
             _files.add(path);
+            if (_notify != null) {
+              _notify(path);
+            }
           }
 
         } else {
           _files.add(path);
+          if (_notify != null) {
+            _notify(path);
+          }
         }
 
         return;
@@ -406,10 +438,16 @@ class GlobLister {
         if (segment.onlyDirectory) {
           if (isDirectory) {
             _files.add(entryPath);
+            if (_notify != null) {
+              _notify(path);
+            }
           }
 
         } else {
           _files.add(entryPath);
+          if (_notify != null) {
+            _notify(path);
+          }
         }
 
         continue;

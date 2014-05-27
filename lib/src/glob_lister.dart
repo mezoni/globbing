@@ -155,6 +155,13 @@ class GlobLister {
     return _files;
   }
 
+  void _addFile(String path) {
+    _files.add(path);
+    if(_notify != null) {
+      _notify(path);
+    }
+  }
+
   void _listAbsoluteWithCrossing(String path) {
     if (_isWindows) {
       path = path.replaceAll("\\", "/");
@@ -216,10 +223,7 @@ class GlobLister {
       }
 
       if (exists) {
-        _files.add(path);
-        if (_notify != null) {
-          _notify(path);
-        }
+        _addFile(path);
       }
 
       return;
@@ -251,17 +255,11 @@ class GlobLister {
 
         if (segment.onlyDirectory) {
           if (dirExists) {
-            _files.add(path);
-            if (_notify != null) {
-              _notify(path);
-            }
+            _addFile(path);
           }
 
         } else {
-          _files.add(path);
-          if (_notify != null) {
-            _notify(path);
-          }
+          _addFile(path);
         }
 
         return;
@@ -303,17 +301,11 @@ class GlobLister {
       if (level == _segments.length - 1) {
         if (segment.onlyDirectory) {
           if (isDirectory) {
-            _files.add(entryPath);
-            if (_notify != null) {
-              _notify(path);
-            }
+            _addFile(entryPath);
           }
 
         } else {
-          _files.add(entryPath);
-          if (_notify != null) {
-            _notify(path);
-          }
+          _addFile(entryPath);
         }
 
         continue;
@@ -343,19 +335,13 @@ class GlobLister {
         if (isDirectory) {
           relativePath += "/";
           if (_glob.match(relativePath)) {
-            _files.add(entryPath);
-            if (_notify != null) {
-              _notify(path);
-            }
+            _addFile(entryPath);
           }
         }
 
       } else {
         if (_glob.match(relativePath)) {
-          _files.add(entryPath);
-          if (_notify != null) {
-            _notify(path);
-          }
+          _addFile(entryPath);
         }
       }
 
@@ -386,17 +372,11 @@ class GlobLister {
 
         if (segment.onlyDirectory) {
           if (dirExists) {
-            _files.add(path);
-            if (_notify != null) {
-              _notify(path);
-            }
+            _addFile(path);
           }
 
         } else {
-          _files.add(path);
-          if (_notify != null) {
-            _notify(path);
-          }
+          _addFile(path);
         }
 
         return;
@@ -444,17 +424,11 @@ class GlobLister {
       if (level == _segments.length - 1) {
         if (segment.onlyDirectory) {
           if (isDirectory) {
-            _files.add(entryPath);
-            if (_notify != null) {
-              _notify(path);
-            }
+            _addFile(entryPath);
           }
 
         } else {
-          _files.add(entryPath);
-          if (_notify != null) {
-            _notify(path);
-          }
+          _addFile(entryPath);
         }
 
         continue;

@@ -85,7 +85,9 @@ class GlobFilter {
       }
 
       if (_onlyDirectory) {
-        path += "/";
+        if (_isDirectory(path)) {
+          path += "/";
+        }
       }
 
       if (!_glob.match(path)) {
@@ -129,7 +131,9 @@ class GlobFilter {
       }
 
       if (_onlyDirectory) {
-        path += "/";
+        if (_isDirectory(path)) {
+          path += "/";
+        }
       }
 
       if (_glob.match(path)) {

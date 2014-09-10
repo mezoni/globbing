@@ -350,6 +350,14 @@ class GlobParser {
   static const String _MESSAGE_UNEXPECTED_END_OF_BRACE =
       "Unexpected end of brace";
 
+  GlobParser({gitSemantics: false}) {
+    if (gitSemantics == null) {
+      throw new ArgumentError("gitSemantics: gitSemantics");
+    }
+
+    _gitSemantics = gitSemantics;
+  }
+
   String _ch;
 
   String _input;
@@ -357,6 +365,8 @@ class GlobParser {
   bool _insideChoice;
 
   bool _isRoot;
+
+  bool _gitSemantics;
 
   int _length;
 

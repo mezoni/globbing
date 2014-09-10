@@ -7,6 +7,11 @@ class Glob implements Pattern {
   final bool caseSensitive;
 
   /**
+   * True, if we should match git's semantics; otherwise false.
+   */
+  final bool gitSemantics;
+
+  /**
    * Pattern for this glob.
    */
   final String pattern;
@@ -28,7 +33,7 @@ class Glob implements Pattern {
    *  [caseSensitive]
    *   True, if the pattern is case sensitive; otherwise false.
    */
-  Glob(this.pattern, {this.caseSensitive: true}) {
+  Glob(this.pattern, {this.caseSensitive: true, this.gitSemantics: false}) {
     if (pattern == null) {
       throw new ArgumentError("pattern: $pattern");
     }
@@ -37,7 +42,11 @@ class Glob implements Pattern {
       throw new ArgumentError("caseSensitive: $caseSensitive");
     }
 
-    _compile(caseSensitive);
+    if (gitSemantics == null) {
+      throw new ArgumentError("gitSemantics: gitSemantics");
+    }
+
+    _compile(caseSensitive, gitSemantics);
   }
 
   /**
@@ -78,9 +87,13 @@ class Glob implements Pattern {
     return pattern;
   }
 
-  void _compile(bool caseSensitive) {
+  void _compile(bool caseSensitive, bool gitSemantics) {
     var compiler = new _GlobCompiler();
-    var result = compiler.compile(pattern, caseSensitive: caseSensitive);
+    var result = compiler.compile(
+      pattern,
+      caseSensitive: caseSensitive,
+      gitSemantics: gitSemantics
+    );
     _crossesDirectory = result.crossesDirectory;
     _expression = result.expression;
     _isAbsolute = result.isAbsolute;
@@ -178,6 +191,7 @@ class _GlobCompiler {
       "Unexpected end of character class";
 
   bool _caseSensitive;
+  bool _gitSemantics;
 
   StringBuffer _globalBuffer;
 
@@ -185,7 +199,9 @@ class _GlobCompiler {
 
   StringBuffer _segmentBuffer;
 
-  _GlobCompilerResult compile(String input, {bool caseSensitive: true}) {
+  _GlobCompilerResult compile(String input,
+    {bool caseSensitive: true, bool gitSemantics: false}
+  ) {
     if (input == null) {
       throw new ArgumentError("input: $input");
     }
@@ -194,14 +210,19 @@ class _GlobCompiler {
       throw new ArgumentError("caseSensitive: $caseSensitive");
     }
 
+    if (gitSemantics == null) {
+      throw new ArgumentError("gitSemantics: gitSemantics");
+    }
+
     _caseSensitive = caseSensitive;
+    _gitSemantics = gitSemantics;
     _input = input;
     return _compile();
   }
 
   _compile() {
     _reset();
-    var parser = new GlobParser();
+    var parser = new GlobParser(gitSemantics: _gitSemantics);
     var node = parser.parse(_input);
     var segments = _compileSegments(node.nodes);
     var result = new _GlobCompilerResult();

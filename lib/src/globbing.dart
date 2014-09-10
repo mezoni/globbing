@@ -250,6 +250,10 @@ class _GlobCompiler {
     _write(".*");
   }
 
+  void _compileAsterisksSlash(GlobNodeAsterisksSlash node, bool first) {
+    _write("(.*\/)*");
+  }
+
   void _compileBrace(GlobNodeBrace node, bool first) {
     _write("(?:");
     var nodes = node.nodes;
@@ -262,6 +266,9 @@ class _GlobCompiler {
           break;
         case GlobNodeTypes.ASTERISKS:
           _compileAsterisks(element, first);
+          break;
+        case GlobNodeTypes.ASTERISKS_SLASH:
+          _compileAsterisksSlash(element, first);
           break;
         case GlobNodeTypes.BRACE:
           _compileBrace(element, first);
@@ -508,6 +515,9 @@ class _GlobCompiler {
           break;
         case GlobNodeTypes.ASTERISKS:
           _compileAsterisks(element, first);
+          break;
+        case GlobNodeTypes.ASTERISKS_SLASH:
+          _compileAsterisksSlash(element, first);
           break;
         case GlobNodeTypes.BRACE:
           _compileBrace(element, first);

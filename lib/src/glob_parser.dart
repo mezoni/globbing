@@ -82,6 +82,25 @@ class GlobNodeAsterisks extends GlobNode {
   GlobNodeTypes get type => GlobNodeTypes.ASTERISKS;
 }
 
+class GlobNodeAsterisksSlash extends GlobNode {
+  GlobNodeAsterisksSlash(String source, int position): super(source, position);
+
+  /**
+   * Returns true if node crosses directory; otherwise false.
+   */
+  bool get crossesDirectory => true;
+
+  /**
+   * Returns true if node is strict; otherwise false.
+   */
+  bool get strict => false;
+
+  /**
+   * Returns type of this node.
+   */
+  GlobNodeTypes get type => GlobNodeTypes.ASTERISKS_SLASH;
+}
+
 class GlobNodeBrace extends GlobNodeCollection {
 
   GlobNodeBrace(String source, int position, List<GlobNode> nodes): super(
@@ -304,6 +323,9 @@ class GlobNodeTypes {
   static const GlobNodeTypes ASTERISK = const GlobNodeTypes("ASTERISK");
 
   static const GlobNodeTypes ASTERISKS = const GlobNodeTypes("ASTERISKS");
+
+  static const GlobNodeTypes ASTERISKS_SLASH = const GlobNodeTypes(
+      "ASTERISKS_SLASH");
 
   static const GlobNodeTypes BRACE = const GlobNodeTypes("BRACE");
 
@@ -827,12 +849,20 @@ class GlobParser {
     var start = _position;
     _nextChar();
     var crossesDirectory = false;
+    var endsInSlash = false;
     switch (_ch) {
       case "*":
         crossesDirectory = true;
         while (true) {
           _nextChar();
           if (_ch != "*") {
+            if(_ch == "/") {
+              if(_gitSemantics) {
+                _nextChar();
+              }
+              endsInSlash = true;
+            }
+
             break;
           }
         }
@@ -843,7 +873,11 @@ class GlobParser {
 
     var source = _input.substring(start, _position);
     if (crossesDirectory) {
-      return new GlobNodeAsterisks(source, start);
+      if(endsInSlash && _gitSemantics) {
+        return new GlobNodeAsterisksSlash(source, start);
+      } else {
+        return new GlobNodeAsterisks(source, start);
+      }
     } else {
       return new GlobNodeAsterisk(source, start);
     }

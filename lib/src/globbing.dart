@@ -56,8 +56,8 @@ class Glob implements Pattern {
    */
   List<GlobSegment> get segments => _segments;
 
-  Iterable<Match> allMatches(String str) {
-    return _expression.allMatches(str);
+  Iterable<Match> allMatches(String str, [int start = 0]) {
+    return _expression.allMatches(str, start);
   }
 
   /**
@@ -138,8 +138,8 @@ class GlobSegment implements Pattern {
     _expression = expression;
   }
 
-  Iterable<Match> allMatches(String str) {
-    return _expression.allMatches(str);
+  Iterable<Match> allMatches(String str, [int start = 0]) {
+    return _expression.allMatches(str, start);
   }
 
   /**

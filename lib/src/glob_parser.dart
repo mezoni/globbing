@@ -372,12 +372,12 @@ class GlobParser {
   static const String _MESSAGE_UNEXPECTED_END_OF_BRACE =
       "Unexpected end of brace";
 
-  GlobParser({gitSemantics: false}) {
-    if (gitSemantics == null) {
-      throw new ArgumentError("gitSemantics: gitSemantics");
+  GlobParser({gitignoreSemantics: false}) {
+    if (gitignoreSemantics == null) {
+      throw new ArgumentError("gitignoreSemantics: gitignoreSemantics");
     }
 
-    _gitSemantics = gitSemantics;
+    _gitignoreSemantics = gitignoreSemantics;
   }
 
   String _ch;
@@ -388,7 +388,7 @@ class GlobParser {
 
   bool _isRoot;
 
-  bool _gitSemantics;
+  bool _gitignoreSemantics;
 
   int _length;
 
@@ -857,7 +857,7 @@ class GlobParser {
           _nextChar();
           if (_ch != "*") {
             if(_ch == "/") {
-              if(_gitSemantics) {
+              if(_gitignoreSemantics) {
                 _nextChar();
               }
               endsInSlash = true;
@@ -873,7 +873,7 @@ class GlobParser {
 
     var source = _input.substring(start, _position);
     if (crossesDirectory) {
-      if(endsInSlash && _gitSemantics) {
+      if(endsInSlash && _gitignoreSemantics) {
         return new GlobNodeAsterisksSlash(source, start);
       } else {
         return new GlobNodeAsterisks(source, start);

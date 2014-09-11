@@ -61,14 +61,14 @@ void testAsterisksSlash() {
 
   // **
   var pattern = "**";
-  var parser = new GlobParser(gitSemantics: true);
+  var parser = new GlobParser(gitignoreSemantics: true);
   var segments = parser.parse(pattern);
   var result = segments.nodes.first.nodes.first is GlobNodeAsterisksSlash;
   expect(result, false, reason: "$subject, $pattern");
 
   // **/
   pattern = "**/";
-  parser = new GlobParser(gitSemantics: true);
+  parser = new GlobParser(gitignoreSemantics: true);
   segments = parser.parse(pattern);
   result = segments.nodes.first.nodes.first is GlobNodeAsterisksSlash;
   expect(result, true, reason: "$subject, $pattern");
@@ -76,7 +76,7 @@ void testAsterisksSlash() {
   result = segments.nodes.first.nodes.first.source;
   expect(result, pattern, reason: "$subject, $pattern");
 
-  // **/ with gitSemantics unset (and defaulting to false)
+  // **/ with gitignoreSemantics unset (and defaulting to false)
   pattern = "**/";
   parser = new GlobParser();
   segments = parser.parse(pattern);

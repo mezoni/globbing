@@ -7,6 +7,7 @@ void main() {
   testCharacterClass();
   testChoice();
   testCrossing();
+  testGitignoreSemantics();
   testDotglob();
   testEscape();
   testExtension();
@@ -133,6 +134,50 @@ void testCrossing() {
 
   // "/home/**ab*/def"
   glob = new Glob("/home/**ab*/def");
+  path = "/home/ab1/ab2/ab3/def";
+  result = glob.match(path);
+  expect(result, true, reason: glob.pattern);
+}
+
+void testGitignoreSemantics() {
+  // "/home/**/ab*"
+  var glob = new Glob("/home/**/ab*", gitignoreSemantics: true);
+  var path = "/home/foo/baz/abc";
+  var result = glob.match(path);
+  expect(result, true, reason: glob.pattern);
+
+  // "/home/**/ab*"
+  glob = new Glob("/home/**/ab*", gitignoreSemantics: true);
+  path = "/home/abc";
+  result = glob.match(path);
+  expect(result, true, reason: glob.pattern);
+
+  // "/home/**/ab*/**/def"
+  glob = new Glob("/home/**/ab*/**/def", gitignoreSemantics: true);
+  path = "/home/foo/abc/123/def";
+  result = glob.match(path);
+  expect(result, true, reason: glob.pattern);
+
+  // "/home/**/ab*/**/def"
+  glob = new Glob("/home/**/ab*/**/def", gitignoreSemantics: true);
+  path = "/home/abc/def";
+  result = glob.match(path);
+  expect(result, true, reason: glob.pattern);
+
+  // "/home/**/ab*/**/def"
+  glob = new Glob("/home/**/ab*/**/def", gitignoreSemantics: true);
+  path = "/home/foo/agc/123/def";
+  result = glob.match(path);
+  expect(result, false, reason: glob.pattern);
+
+  // "/home/**/ab*/**/def"
+  glob = new Glob("/home/**/ab*/**/def", gitignoreSemantics: true);
+  path = "/home/agc/def";
+  result = glob.match(path);
+  expect(result, false, reason: glob.pattern);
+
+  // "/home/**ab*/def"
+  glob = new Glob("/home/**ab*/def", gitignoreSemantics: true);
   path = "/home/ab1/ab2/ab3/def";
   result = glob.match(path);
   expect(result, true, reason: glob.pattern);

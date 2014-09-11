@@ -4,6 +4,7 @@ import "package:unittest/unittest.dart";
 void main() {
   testAsterisk();
   testAsterisks();
+  testAsterisksSlash();
   testBrace();
   testCharacterClass();
   testCrossesDirectory();
@@ -53,6 +54,44 @@ void testAsterisks() {
   // source
   result = segments.nodes.first.nodes.first.source;
   expect(result, pattern, reason: "$subject, $pattern");
+}
+
+void testAsterisksSlash() {
+  var subject = "AsterisksSlash";
+
+  // **
+  var pattern = "*/";
+  var parser = new GlobParser(gitignoreSemantics: true);
+  var segments = parser.parse(pattern);
+  var result = segments.nodes.first.nodes.first is GlobNodeAsterisk;
+  expect(result, true, reason: "$subject, $pattern");
+
+  // **
+  pattern = "**";
+  parser = new GlobParser(gitignoreSemantics: true);
+  segments = parser.parse(pattern);
+  result = segments.nodes.first.nodes.first is GlobNodeAsterisksSlash;
+  expect(result, false, reason: "$subject, $pattern");
+
+  // **/
+  pattern = "**/";
+  parser = new GlobParser(gitignoreSemantics: true);
+  segments = parser.parse(pattern);
+  result = segments.nodes.first.nodes.first is GlobNodeAsterisksSlash;
+  expect(result, true, reason: "$subject, $pattern");
+  // source
+  result = segments.nodes.first.nodes.first.source;
+  expect(result, pattern, reason: "$subject, $pattern");
+
+  // **/ with gitignoreSemantics unset (and defaulting to false)
+  pattern = "**/";
+  parser = new GlobParser();
+  segments = parser.parse(pattern);
+  result = segments.nodes.first.nodes.first is GlobNodeAsterisksSlash;
+  expect(result, false, reason: "$subject, $pattern");
+  // source
+  result = segments.nodes.first.nodes.first.source;
+  expect(result, "**", reason: "$subject, $pattern");
 }
 
 void testBrace() {

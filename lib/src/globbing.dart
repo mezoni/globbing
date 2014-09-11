@@ -7,6 +7,11 @@ class Glob implements Pattern {
   final bool caseSensitive;
 
   /**
+   * True, if we should match git's semantics; otherwise false.
+   */
+  final bool gitignoreSemantics;
+
+  /**
    * Pattern for this glob.
    */
   final String pattern;
@@ -28,7 +33,8 @@ class Glob implements Pattern {
    *  [caseSensitive]
    *   True, if the pattern is case sensitive; otherwise false.
    */
-  Glob(this.pattern, {this.caseSensitive: true}) {
+  Glob(this.pattern, {this.caseSensitive: true,
+      this.gitignoreSemantics: false}) {
     if (pattern == null) {
       throw new ArgumentError("pattern: $pattern");
     }
@@ -37,7 +43,11 @@ class Glob implements Pattern {
       throw new ArgumentError("caseSensitive: $caseSensitive");
     }
 
-    _compile(caseSensitive);
+    if (gitignoreSemantics == null) {
+      throw new ArgumentError("gitignoreSemantics: gitignoreSemantics");
+    }
+
+    _compile(caseSensitive, gitignoreSemantics);
   }
 
   /**
@@ -78,9 +88,13 @@ class Glob implements Pattern {
     return pattern;
   }
 
-  void _compile(bool caseSensitive) {
+  void _compile(bool caseSensitive, bool gitignoreSemantics) {
     var compiler = new _GlobCompiler();
-    var result = compiler.compile(pattern, caseSensitive: caseSensitive);
+    var result = compiler.compile(
+      pattern,
+      caseSensitive: caseSensitive,
+      gitignoreSemantics: gitignoreSemantics
+    );
     _crossesDirectory = result.crossesDirectory;
     _expression = result.expression;
     _isAbsolute = result.isAbsolute;
@@ -178,6 +192,7 @@ class _GlobCompiler {
       "Unexpected end of character class";
 
   bool _caseSensitive;
+  bool _gitignoreSemantics;
 
   StringBuffer _globalBuffer;
 
@@ -185,7 +200,9 @@ class _GlobCompiler {
 
   StringBuffer _segmentBuffer;
 
-  _GlobCompilerResult compile(String input, {bool caseSensitive: true}) {
+  _GlobCompilerResult compile(String input,
+    {bool caseSensitive: true, bool gitignoreSemantics: false}
+  ) {
     if (input == null) {
       throw new ArgumentError("input: $input");
     }
@@ -194,14 +211,19 @@ class _GlobCompiler {
       throw new ArgumentError("caseSensitive: $caseSensitive");
     }
 
+    if (gitignoreSemantics == null) {
+      throw new ArgumentError("gitignoreSemantics: gitignoreSemantics");
+    }
+
     _caseSensitive = caseSensitive;
+    _gitignoreSemantics = gitignoreSemantics;
     _input = input;
     return _compile();
   }
 
   _compile() {
     _reset();
-    var parser = new GlobParser();
+    var parser = new GlobParser(gitignoreSemantics: _gitignoreSemantics);
     var node = parser.parse(_input);
     var segments = _compileSegments(node.nodes);
     var result = new _GlobCompilerResult();
@@ -229,6 +251,10 @@ class _GlobCompiler {
     _write(".*");
   }
 
+  void _compileAsterisksSlash(GlobNodeAsterisksSlash node, bool first) {
+    _write("(.*\/)*");
+  }
+
   void _compileBrace(GlobNodeBrace node, bool first) {
     _write("(?:");
     var nodes = node.nodes;
@@ -241,6 +267,9 @@ class _GlobCompiler {
           break;
         case GlobNodeTypes.ASTERISKS:
           _compileAsterisks(element, first);
+          break;
+        case GlobNodeTypes.ASTERISKS_SLASH:
+          _compileAsterisksSlash(element, first);
           break;
         case GlobNodeTypes.BRACE:
           _compileBrace(element, first);
@@ -487,6 +516,9 @@ class _GlobCompiler {
           break;
         case GlobNodeTypes.ASTERISKS:
           _compileAsterisks(element, first);
+          break;
+        case GlobNodeTypes.ASTERISKS_SLASH:
+          _compileAsterisksSlash(element, first);
           break;
         case GlobNodeTypes.BRACE:
           _compileBrace(element, first);

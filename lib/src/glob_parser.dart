@@ -857,7 +857,7 @@ class GlobParser {
           _nextChar();
           if (_ch != "*") {
             if(_ch == "/") {
-              if(_gitignoreSemantics) {
+              if(_gitignoreSemantics && crossesDirectory) {
                 _nextChar();
               }
               endsInSlash = true;

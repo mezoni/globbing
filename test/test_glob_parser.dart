@@ -60,10 +60,17 @@ void testAsterisksSlash() {
   var subject = "AsterisksSlash";
 
   // **
-  var pattern = "**";
+  var pattern = "*/";
   var parser = new GlobParser(gitignoreSemantics: true);
   var segments = parser.parse(pattern);
-  var result = segments.nodes.first.nodes.first is GlobNodeAsterisksSlash;
+  var result = segments.nodes.first.nodes.first is GlobNodeAsterisk;
+  expect(result, true, reason: "$subject, $pattern");
+
+  // **
+  pattern = "**";
+  parser = new GlobParser(gitignoreSemantics: true);
+  segments = parser.parse(pattern);
+  result = segments.nodes.first.nodes.first is GlobNodeAsterisksSlash;
   expect(result, false, reason: "$subject, $pattern");
 
   // **/

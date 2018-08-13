@@ -5,6 +5,7 @@ description: Globbing is a library for pattern matching based on wildcard charac
 homepage: https://github.com/mezoni/globbing
 environment:
   sdk: '>=2.0.0 <3.0.0'
-dev_dependencies:
-  path: any
+dependencies:
+  path: any  
+dev_dependencies:  
   test: any

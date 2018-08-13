@@ -45,7 +45,7 @@ abstract class GlobNode {
 }
 
 class GlobNodeAsterisk extends GlobNode {
-  GlobNodeAsterisk(String source, int position): super(source, position);
+  GlobNodeAsterisk(String source, int position) : super(source, position);
 
   /**
    * Returns true if node crosses directory; otherwise false.
@@ -64,7 +64,7 @@ class GlobNodeAsterisk extends GlobNode {
 }
 
 class GlobNodeAsterisks extends GlobNode {
-  GlobNodeAsterisks(String source, int position): super(source, position);
+  GlobNodeAsterisks(String source, int position) : super(source, position);
 
   /**
    * Returns true if node crosses directory; otherwise false.
@@ -83,9 +83,8 @@ class GlobNodeAsterisks extends GlobNode {
 }
 
 class GlobNodeBrace extends GlobNodeCollection {
-
-  GlobNodeBrace(String source, int position, List<GlobNode> nodes): super(
-      source, position, nodes) {
+  GlobNodeBrace(String source, int position, List<GlobNode> nodes)
+      : super(source, position, nodes) {
     if (_nodes.length < 2) {
       throw new ArgumentError(
           "The number of elements in the list of nodes must be at least 2");
@@ -104,7 +103,8 @@ class GlobNodeBrace extends GlobNodeCollection {
 }
 
 class GlobNodeCharacterClass extends GlobNode {
-  GlobNodeCharacterClass(String source, int position): super(source, position) {
+  GlobNodeCharacterClass(String source, int position)
+      : super(source, position) {
     if (source == null || source.length < 3) {
       throw new ArgumentError("source: $source");
     }
@@ -137,8 +137,8 @@ abstract class GlobNodeCollection extends GlobNode {
 
   bool _strict;
 
-  GlobNodeCollection(String source, int position, List<GlobNode> nodes): super(
-      source, position) {
+  GlobNodeCollection(String source, int position, List<GlobNode> nodes)
+      : super(source, position) {
     if (nodes == null || nodes.isEmpty) {
       throw new ArgumentError("nodes: $nodes");
     }
@@ -193,7 +193,7 @@ abstract class GlobNodeCollection extends GlobNode {
 }
 
 class GlobNodeLiteral extends GlobNode {
-  GlobNodeLiteral(String source, int position): super(source, position);
+  GlobNodeLiteral(String source, int position) : super(source, position);
 
   /**
    * Returns true if node crosses directory; otherwise false.
@@ -212,7 +212,7 @@ class GlobNodeLiteral extends GlobNode {
 }
 
 class GlobNodeQuestion extends GlobNode {
-  GlobNodeQuestion(String source, int position): super(source, position);
+  GlobNodeQuestion(String source, int position) : super(source, position);
 
   /**
    * Returns true if node crosses directory; otherwise false.
@@ -235,8 +235,9 @@ class GlobNodeSegment extends GlobNodeCollection {
 
   bool _onlyDirectory;
 
-  GlobNodeSegment(String source, int position, bool isRoot, List<GlobNode>
-      nodes): super(source, position, nodes) {
+  GlobNodeSegment(
+      String source, int position, bool isRoot, List<GlobNode> nodes)
+      : super(source, position, nodes) {
     if (isRoot == null) {
       throw new ArgumentError("isRoot: $isRoot");
     }
@@ -274,8 +275,8 @@ class GlobNodeSegments extends GlobNodeCollection {
 
   List<GlobNodeSegment> _nodes;
 
-  GlobNodeSegments(String source, int position, List<GlobNodeSegment> nodes):
-      super(source, position, nodes);
+  GlobNodeSegments(String source, int position, List<GlobNodeSegment> nodes)
+      : super(source, position, nodes);
 
   /**
    * Returns true if node if is an absolute path; otherwise false.
@@ -291,8 +292,8 @@ class GlobNodeSegments extends GlobNodeCollection {
   /**
    * Returns the elements of this node.
    */
-  List<GlobNodeSegment> get nodes => new UnmodifiableListView<GlobNodeSegment>(
-      _nodes);
+  List<GlobNodeSegment> get nodes =>
+      new UnmodifiableListView<GlobNodeSegment>(_nodes);
 
   /**
    * Returns the type of this node.
@@ -307,8 +308,8 @@ class GlobNodeTypes {
 
   static const GlobNodeTypes BRACE = const GlobNodeTypes("BRACE");
 
-  static const GlobNodeTypes CHARACTER_CLASS = const GlobNodeTypes(
-      "CHARACTER_CLASS");
+  static const GlobNodeTypes CHARACTER_CLASS =
+      const GlobNodeTypes("CHARACTER_CLASS");
 
   static const GlobNodeTypes LITERAL = const GlobNodeTypes("LITERAL");
 

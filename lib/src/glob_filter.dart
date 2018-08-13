@@ -8,7 +8,7 @@ class GlobFilter {
 
   Glob _glob;
 
-  Function _isDirectory;
+  bool Function(String) _isDirectory;
 
   bool _isWindows;
 
@@ -27,8 +27,8 @@ class GlobFilter {
    *  [isWindows]
    *   True, if used the path in the Windows style; otherwise false.
    */
-  GlobFilter(this.pattern, {bool caseSensitive, bool isDirectory(String
-      path), bool isWindows}) {
+  GlobFilter(this.pattern,
+      {bool caseSensitive, bool isDirectory(String path), bool isWindows}) {
     if (pattern == null) {
       throw new ArgumentError("pattern: $pattern");
     }
@@ -71,8 +71,8 @@ class GlobFilter {
    *  [removed]
    *   A function that is called whenever an item is removed.
    */
-  List<String> exclude(List<String> list, {void added(String path), void
-      removed(String path)}) {
+  List<String> exclude(List<String> list,
+      {void added(String path), void removed(String path)}) {
     if (list == null) {
       throw new ArgumentError("list: $list");
     }
@@ -117,8 +117,8 @@ class GlobFilter {
    *  [removed]
    *   A function that is called whenever an item is removed.
    */
-  List<String> include(List<String> list, {void added(String path), void
-      removed(String path)}) {
+  List<String> include(List<String> list,
+      {void added(String path), void removed(String path)}) {
     if (list == null) {
       throw new ArgumentError("list: $list");
     }

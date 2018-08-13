@@ -113,8 +113,8 @@ class GlobSegment implements Pattern {
    */
   final bool strict;
 
-  GlobSegment(this.pattern, Pattern
-      expression, {this.crossesDirectory, this.onlyDirectory, this.strict}) {
+  GlobSegment(this.pattern, Pattern expression,
+      {this.crossesDirectory, this.onlyDirectory, this.strict}) {
     if (pattern == null) {
       throw new ArgumentError("pattern: $pattern");
     }
@@ -199,15 +199,15 @@ class _GlobCompiler {
     return _compile();
   }
 
-  _compile() {
+  _GlobCompilerResult _compile() {
     _reset();
     var parser = new GlobParser();
     var node = parser.parse(_input);
     var segments = _compileSegments(node.nodes);
     var result = new _GlobCompilerResult();
     result.crossesDirectory = node.crossesDirectory;
-    result.expression = new RegExp(_globalBuffer.toString(), caseSensitive:
-        _caseSensitive);
+    result.expression =
+        new RegExp(_globalBuffer.toString(), caseSensitive: _caseSensitive);
     result.isAbsolute = node.isAbsolute;
     result.segments = segments;
     return result;
@@ -237,22 +237,22 @@ class _GlobCompiler {
       var element = nodes[i];
       switch (element.type) {
         case GlobNodeTypes.ASTERISK:
-          _compileAsterisk(element, first);
+          _compileAsterisk(element as GlobNodeAsterisk, first);
           break;
         case GlobNodeTypes.ASTERISKS:
-          _compileAsterisks(element, first);
+          _compileAsterisks(element as GlobNodeAsterisks, first);
           break;
         case GlobNodeTypes.BRACE:
-          _compileBrace(element, first);
+          _compileBrace(element as GlobNodeBrace, first);
           break;
         case GlobNodeTypes.CHARACTER_CLASS:
-          _compileCharacterClass(element);
+          _compileCharacterClass(element as GlobNodeCharacterClass);
           break;
         case GlobNodeTypes.LITERAL:
-          _compileLiteral(element);
+          _compileLiteral(element as GlobNodeLiteral);
           break;
         case GlobNodeTypes.QUESTION:
-          _compileQuestion(element);
+          _compileQuestion(element as GlobNodeQuestion);
           break;
         default:
           _errorIllegalElement(node, element);
@@ -382,7 +382,6 @@ class _GlobCompiler {
               if (position >= length) {
                 var message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
                 _error(message, node.position + position);
-
               }
 
               ch = source[position++];
@@ -483,22 +482,22 @@ class _GlobCompiler {
     for (var element in node.nodes) {
       switch (element.type) {
         case GlobNodeTypes.ASTERISK:
-          _compileAsterisk(element, first);
+          _compileAsterisk(element as GlobNodeAsterisk, first);
           break;
         case GlobNodeTypes.ASTERISKS:
-          _compileAsterisks(element, first);
+          _compileAsterisks(element as GlobNodeAsterisks, first);
           break;
         case GlobNodeTypes.BRACE:
-          _compileBrace(element, first);
+          _compileBrace(element as GlobNodeBrace, first);
           break;
         case GlobNodeTypes.CHARACTER_CLASS:
-          _compileCharacterClass(element);
+          _compileCharacterClass(element as GlobNodeCharacterClass);
           break;
         case GlobNodeTypes.LITERAL:
-          _compileLiteral(element);
+          _compileLiteral(element as GlobNodeLiteral);
           break;
         case GlobNodeTypes.QUESTION:
-          _compileQuestion(element);
+          _compileQuestion(element as GlobNodeQuestion);
           break;
         default:
           _errorIllegalElement(node, element);
@@ -514,8 +513,10 @@ class _GlobCompiler {
     var onlyDirector = node.onlyDirectory;
     var source = node.source;
     var strict = node.strict;
-    var segment = new GlobSegment(source, expression, crossesDirectory:
-        crossesDirectory, onlyDirectory: onlyDirector, strict: strict);
+    var segment = new GlobSegment(source, expression,
+        crossesDirectory: crossesDirectory,
+        onlyDirectory: onlyDirector,
+        strict: strict);
     return segment;
   }
 
@@ -563,8 +564,8 @@ class _GlobCompiler {
     _error(message, position);
   }
 
-  void _errorIllegalStartOrEndCharacter(GlobNodeTypes type, String
-      should, String ch, int position) {
+  void _errorIllegalStartOrEndCharacter(
+      GlobNodeTypes type, String should, String ch, int position) {
     var message = "'$type' should $should with '$ch'";
     _error(message, position);
   }

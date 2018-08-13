@@ -8,7 +8,7 @@ class GlobLister {
 
   bool _caseSensitive;
 
-  Function _exists;
+  bool Function(String) _exists;
 
   List<String> _files;
 
@@ -16,7 +16,7 @@ class GlobLister {
 
   Glob _glob;
 
-  Function _isDirectory;
+  bool Function(String) _isDirectory;
 
   bool _isWindows;
 
@@ -51,9 +51,13 @@ class GlobLister {
    *  [list]
    *   Function that lists the specified directory.
    */
-  GlobLister(this.pattern, {bool caseSensitive, bool exists(String path), bool
-      followLinks: true, bool isDirectory(String path), bool isWindows, List<String>
-      list(String path, bool followLinks)}) {
+  GlobLister(this.pattern,
+      {bool caseSensitive,
+      bool exists(String path),
+      bool followLinks: true,
+      bool isDirectory(String path),
+      bool isWindows,
+      List<String> list(String path, bool followLinks)}) {
     if (pattern == null) {
       throw new ArgumentError("pattern: $pattern");
     }
@@ -157,7 +161,7 @@ class GlobLister {
 
   void _addFile(String path) {
     _files.add(path);
-    if(_notify != null) {
+    if (_notify != null) {
       _notify(path);
     }
   }
@@ -201,7 +205,7 @@ class GlobLister {
     }
 
     var index = 0;
-    for ( ; index < length; index++) {
+    for (; index < length; index++) {
       var pathSegment = pathSegments[index];
       var segment = _segments[index];
       if (segment.onlyDirectory) {
@@ -257,7 +261,6 @@ class GlobLister {
           if (dirExists) {
             _addFile(path);
           }
-
         } else {
           _addFile(path);
         }
@@ -303,7 +306,6 @@ class GlobLister {
           if (isDirectory) {
             _addFile(entryPath);
           }
-
         } else {
           _addFile(entryPath);
         }
@@ -338,7 +340,6 @@ class GlobLister {
             _addFile(entryPath);
           }
         }
-
       } else {
         if (_glob.match(relativePath)) {
           _addFile(entryPath);
@@ -374,7 +375,6 @@ class GlobLister {
           if (dirExists) {
             _addFile(path);
           }
-
         } else {
           _addFile(path);
         }
@@ -426,7 +426,6 @@ class GlobLister {
           if (isDirectory) {
             _addFile(entryPath);
           }
-
         } else {
           _addFile(entryPath);
         }

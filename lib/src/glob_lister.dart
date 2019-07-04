@@ -1,9 +1,7 @@
 part of globbing.glob_lister;
 
 class GlobLister {
-  /**
-   * Pattern of this glob lister.
-   */
+  /// Pattern of this glob lister.
   final String pattern;
 
   bool _caseSensitive;
@@ -20,7 +18,7 @@ class GlobLister {
 
   bool _isWindows;
 
-  Function _list;
+  List<String> Function(String, bool) _list;
 
   Function _notify;
 
@@ -32,54 +30,52 @@ class GlobLister {
 
   bool _useStrict;
 
-  /**
-   * Creates the glob lister.
-   *
-   * Parameters:
-   *  [pattern]
-   *   Pattern of this glob lister.
-   *  [caseSensitive]
-   *   True, if the pattern is case sensitive; otherwise false.
-   *  [exists]
-   *   Function that determines that the specified path exists or not.
-   *  [followLinks]
-   *   True, if lister should follow symbolic links; otherwise false.
-   *  [isDirectory]
-   *    Function that determines that the specified path is a directory or not.
-   *  [isWindows]
-   *   True, if used the path in the Windows style; otherwise false.
-   *  [list]
-   *   Function that lists the specified directory.
-   */
+  /// Creates the glob lister.
+  ///
+  /// Parameters:
+  ///  [pattern]
+  ///   Pattern of this glob lister.
+  ///  [caseSensitive]
+  ///   True, if the pattern is case sensitive; otherwise false.
+  ///  [exists]
+  ///   Function that determines that the specified path exists or not.
+  ///  [followLinks]
+  ///   True, if lister should follow symbolic links; otherwise false.
+  ///  [isDirectory]
+  ///    Function that determines that the specified path is a directory or not.
+  ///  [isWindows]
+  ///   True, if used the path in the Windows style; otherwise false.
+  ///  [list]
+  ///   Function that lists the specified directory.
   GlobLister(this.pattern,
       {bool caseSensitive,
       bool exists(String path),
-      bool followLinks: true,
+      bool followLinks = true,
       bool isDirectory(String path),
       bool isWindows,
       List<String> list(String path, bool followLinks)}) {
     if (pattern == null) {
-      throw new ArgumentError("pattern: $pattern");
+      throw ArgumentError("pattern: $pattern");
     }
 
     if (exists == null) {
-      throw new ArgumentError("exists: $exists");
+      throw ArgumentError("exists: $exists");
     }
 
     if (followLinks == null) {
-      throw new ArgumentError("followLinks: $followLinks");
+      throw ArgumentError("followLinks: $followLinks");
     }
 
     if (isDirectory == null) {
-      throw new ArgumentError("isDirectory: $isDirectory");
+      throw ArgumentError("isDirectory: $isDirectory");
     }
 
     if (isWindows == null) {
-      throw new ArgumentError("isWindows: $isWindows");
+      throw ArgumentError("isWindows: $isWindows");
     }
 
     if (list == null) {
-      throw new ArgumentError("list: $list");
+      throw ArgumentError("list: $list");
     }
 
     if (caseSensitive == null) {
@@ -96,24 +92,22 @@ class GlobLister {
     _isDirectory = isDirectory;
     _isWindows = isWindows;
     _list = list;
-    _glob = new Glob(pattern, caseSensitive: caseSensitive);
+    _glob = Glob(pattern, caseSensitive: caseSensitive);
     _segments = _glob.segments;
-    if (!_segments.isEmpty) {
+    if (_segments.isNotEmpty) {
       _onlyDirectory = _segments.last.onlyDirectory;
     } else {
       _onlyDirectory = false;
     }
   }
 
-  /**
-   * Lists the directory and returns content of this directory.
-   *
-   * Parameters:
-   *  [directory]
-   *   Directory wich will be listed.
-   *  [notify]
-   *   A function that is called whenever an item is added.
-   */
+  /// Lists the directory and returns content of this directory.
+  ///
+  /// Parameters:
+  ///  [directory]
+  ///   Directory wich will be listed.
+  ///  [notify]
+  ///   A function that is called whenever an item is added.
   List<String> list(String directory, {void notify(String path)}) {
     _files = <String>[];
     if (!_isDirectory(directory)) {

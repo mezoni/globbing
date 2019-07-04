@@ -17,9 +17,9 @@ void _testExclude() {
       var pattern = appRoot + "/lib/**/*.dart";
       var lister = _getLister(pattern);
       var list = lister.list(Directory.current.path);
-      var isDirectory = (String path) => new Directory(path).existsSync();
+      var isDirectory = (String path) => Directory(path).existsSync();
       var criteria = appRoot + "/**/src/glob_*.dart";
-      var filter = new GlobFilter(criteria,
+      var filter = GlobFilter(criteria,
           isDirectory: isDirectory, isWindows: Platform.isWindows);
       var result = filter.exclude(list);
       result.sort((a, b) => a.compareTo(b));
@@ -38,9 +38,9 @@ void _testInclude() {
       var pattern = appRoot + "/lib/**/*.dart";
       var lister = _getLister(pattern);
       var list = lister.list(Directory.current.path);
-      var isDirectory = (String path) => new Directory(path).existsSync();
+      var isDirectory = (String path) => Directory(path).existsSync();
       var criteria = appRoot + "/**/src/glob_*.dart";
-      var filter = new GlobFilter(criteria,
+      var filter = GlobFilter(criteria,
           isDirectory: isDirectory, isWindows: Platform.isWindows);
       var result = filter.include(list);
       result.sort((a, b) => a.compareTo(b));
@@ -57,21 +57,21 @@ void _testInclude() {
 
 GlobLister _getLister(String pattern) {
   var exists = (String path) {
-    return FileStat.statSync(path).type != FileSystemEntityType.NOT_FOUND;
+    return FileStat.statSync(path).type != FileSystemEntityType.notFound;
   };
 
   var isDirectory = (String path) {
-    return FileStat.statSync(path).type == FileSystemEntityType.DIRECTORY;
+    return FileStat.statSync(path).type == FileSystemEntityType.directory;
   };
 
   var list = (String path, bool followLinks) {
-    return new Directory(path)
+    return Directory(path)
         .listSync(followLinks: followLinks)
         .map((e) => e.path)
         .toList();
   };
 
-  var lister = new GlobLister(pattern,
+  var lister = GlobLister(pattern,
       exists: exists,
       isDirectory: isDirectory,
       isWindows: Platform.isWindows,

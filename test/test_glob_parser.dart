@@ -17,7 +17,7 @@ void _testAsterisk() {
   test("Asterisk", () {
     {
       var pattern = "*";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result = segments.nodes.first.nodes.first is GlobNodeAsterisk;
       expect(result, true);
@@ -27,7 +27,7 @@ void _testAsterisk() {
     }
     {
       var pattern = "**";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result = segments.nodes.first.nodes.first is GlobNodeAsterisk;
       expect(result, false);
@@ -39,14 +39,14 @@ void _testAsterisks() {
   test("Asterisks", () {
     {
       var pattern = "*";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result = segments.nodes.first.nodes.first is GlobNodeAsterisks;
       expect(result, false);
     }
     {
       var pattern = "**";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result1 = segments.nodes.first.nodes.first is GlobNodeAsterisks;
       expect(result1, true);
@@ -61,7 +61,7 @@ void _testBrace() {
   test("Brace", () {
     {
       var pattern = "{a,[0]}";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result1 = segments.nodes.first.nodes.first is GlobNodeBrace;
       expect(result1, true);
@@ -83,7 +83,7 @@ void _testCharacterClass() {
   test("CharacterClass", () {
     {
       var pattern = r"[0-9a-zA-Z\n]";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result1 = segments.nodes.first.nodes.first is GlobNodeCharacterClass;
       expect(result1, true);
@@ -100,28 +100,28 @@ void _testCrossesDirectory() {
   test("crossesDirectory", () {
     {
       var pattern = "**";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result = segments.crossesDirectory;
       expect(result, true);
     }
     {
       var pattern = "/**";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result = segments.crossesDirectory;
       expect(result, true);
     }
     {
       var pattern = "*";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result = segments.crossesDirectory;
       expect(result, false);
     }
     {
       var pattern = "/*";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result = segments.crossesDirectory;
       expect(result, false);
@@ -133,7 +133,7 @@ void _testLiteral() {
   test("Literal", () {
     {
       var pattern = "hello";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result1 = segments.nodes.first.nodes.first is GlobNodeLiteral;
       expect(result1, true);
@@ -147,28 +147,28 @@ void _testOnlyDirectory() {
   test("OnlyDirectory", () {
     {
       var pattern = "///";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result = segments.nodes.last.onlyDirectory;
       expect(result, false);
     }
     {
       var pattern = "c://";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result = segments.nodes.last.onlyDirectory;
       expect(result, false);
     }
     {
       var pattern = "a//";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result = segments.nodes.last.onlyDirectory;
       expect(result, true);
     }
     {
       var pattern = "a[0]//";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result = segments.nodes.last.onlyDirectory;
       expect(result, true);
@@ -180,7 +180,7 @@ void _testQuestion() {
   test("Question", () {
     {
       var pattern = "?";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result1 = segments.nodes.first.nodes.first is GlobNodeQuestion;
       expect(result1, true);
@@ -194,14 +194,14 @@ void _testSegments() {
   test("Segments", () {
     {
       var pattern = "*?hello";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result = segments.nodes.first.source;
       expect(result, pattern);
     }
     {
       var pattern = "a/b";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result1 = segments.nodes.length;
       expect(result1, 2);
@@ -212,7 +212,7 @@ void _testSegments() {
     }
     {
       var pattern = "a/b/";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result1 = segments.nodes.length;
       expect(result1, 2);
@@ -225,7 +225,7 @@ void _testSegments() {
     }
     {
       var pattern = "/a/b";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result1 = segments.nodes.length;
       expect(result1, 3);
@@ -238,7 +238,7 @@ void _testSegments() {
     }
     {
       var pattern = "//";
-      var parser = new GlobParser();
+      var parser = GlobParser();
       var segments = parser.parse(pattern);
       var result1 = segments.nodes.length;
       expect(result1, 1);

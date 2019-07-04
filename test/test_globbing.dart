@@ -2,7 +2,7 @@ import "package:globbing/globbing.dart";
 import "package:test/test.dart";
 
 void main() {
-  new Glob("[!a]");
+  Glob("[!a]");
   _testCommon();
   _testCharacterClass();
   _testChoice();
@@ -16,7 +16,7 @@ void main() {
 void _testCommon() {
   test("", () {
     {
-      var glob = new Glob("c?*a");
+      var glob = Glob("c?*a");
       var path = "c1a";
       var result1 = glob.match(path);
       expect(result1, true, reason: glob.pattern);
@@ -28,7 +28,7 @@ void _testCommon() {
       expect(result3, false, reason: glob.pattern);
     }
     {
-      var glob = new Glob("a*b*c");
+      var glob = Glob("a*b*c");
       var path = "abc";
       var result1 = glob.match(path);
       expect(result1, true, reason: glob.pattern);
@@ -37,7 +37,7 @@ void _testCommon() {
       expect(result2, true, reason: glob.pattern);
     }
     {
-      var glob = new Glob("*a*b*c");
+      var glob = Glob("*a*b*c");
       var path = "abc";
       var result1 = glob.match(path);
       expect(result1, true, reason: glob.pattern);
@@ -46,19 +46,19 @@ void _testCommon() {
       expect(result2, true, reason: glob.pattern);
     }
     {
-      var glob = new Glob("*a?*b?*c");
+      var glob = Glob("*a?*b?*c");
       var path = "1a1b1c";
       var result = glob.match(path);
       expect(result, true, reason: glob.pattern);
     }
     {
-      var glob = new Glob("?*a?*bcd?*def*");
+      var glob = Glob("?*a?*bcd?*def*");
       var path = "xyza123bcd234def456";
       var result = glob.match(path);
       expect(result, true, reason: glob.pattern);
     }
     {
-      var glob = new Glob("?*a?*bcd?*def*");
+      var glob = Glob("?*a?*bcd?*def*");
       var path = "xyzabcd234def456";
       var result = glob.match(path);
       expect(result, false, reason: glob.pattern);
@@ -69,7 +69,7 @@ void _testCommon() {
 void _testCharacterClass() {
   test("CharacterClass", () {
     {
-      var glob = new Glob("[0-9a]");
+      var glob = Glob("[0-9a]");
       var path = "5";
       var result1 = glob.match(path);
       expect(result1, true, reason: glob.pattern);
@@ -78,28 +78,28 @@ void _testCharacterClass() {
       expect(result2, true, reason: glob.pattern);
     }
     {
-      var glob = new Glob("[!0-9]");
+      var glob = Glob("[!0-9]");
       var path = "5";
       var result = glob.match(path);
       expect(result, false, reason: glob.pattern);
     }
 
     {
-      var glob = new Glob("[-]");
+      var glob = Glob("[-]");
       var path = "-";
       var result = glob.match(path);
       expect(result, true, reason: glob.pattern);
     }
 
     {
-      var glob = new Glob("[]]");
+      var glob = Glob("[]]");
       var path = "]";
       var result = glob.match(path);
       expect(result, true, reason: glob.pattern);
     }
 
     {
-      var glob = new Glob("[]-]");
+      var glob = Glob("[]-]");
       var path = "-";
       var result1 = glob.match(path);
       expect(result1, true, reason: glob.pattern);
@@ -109,7 +109,7 @@ void _testCharacterClass() {
     }
 
     {
-      var glob = new Glob("[--0]");
+      var glob = Glob("[--0]");
       var path = "-";
       var result1 = glob.match(path);
       expect(result1, true, reason: glob.pattern);
@@ -126,7 +126,7 @@ void _testCharacterClass() {
 void _testChoice() {
   test("Choice", () {
     {
-      var glob = new Glob("a{b,c,}");
+      var glob = Glob("a{b,c,}");
       var list = ["a", "ab", "ac"];
       for (var path in list) {
         var result = glob.match(path);
@@ -139,25 +139,25 @@ void _testChoice() {
 void _testCrossing() {
   test("Crossing", () {
     {
-      var glob = new Glob("/home/**/ab*");
+      var glob = Glob("/home/**/ab*");
       var path = "/home/foo/baz/abc";
       var result = glob.match(path);
       expect(result, true, reason: glob.pattern);
     }
     {
-      var glob = new Glob("/home/**/ab*/**/def");
+      var glob = Glob("/home/**/ab*/**/def");
       var path = "/home/foo/abc/123/def";
       var result = glob.match(path);
       expect(result, true, reason: glob.pattern);
     }
     {
-      var glob = new Glob("/home/**/ab*/**/def");
+      var glob = Glob("/home/**/ab*/**/def");
       var path = "/home/foo/agc/123/def";
       var result = glob.match(path);
       expect(result, false, reason: glob.pattern);
     }
     {
-      var glob = new Glob("/home/**ab*/def");
+      var glob = Glob("/home/**ab*/def");
       var path = "/home/ab1/ab2/ab3/def";
       var result = glob.match(path);
       expect(result, true, reason: glob.pattern);
@@ -168,19 +168,19 @@ void _testCrossing() {
 void _testDotGlob() {
   test("Dotglob", () {
     {
-      var glob = new Glob("*");
+      var glob = Glob("*");
       var path = ".hidden";
       var result = glob.match(path);
       expect(result, false, reason: glob.pattern);
     }
     {
-      var glob = new Glob(".*");
+      var glob = Glob(".*");
       var path = ".hidden";
       var result = glob.match(path);
       expect(result, true, reason: glob.pattern);
     }
     {
-      var glob = new Glob("*");
+      var glob = Glob("*");
       var path = ".hidden/.hidden";
       var result = glob.match(path);
       expect(result, false, reason: glob.pattern);
@@ -191,25 +191,25 @@ void _testDotGlob() {
 void _testEscape() {
   test("Escape", () {
     {
-      var glob = new Glob(r"\*");
+      var glob = Glob(r"\*");
       var path = "*";
       var result = glob.match(path);
       expect(result, true, reason: glob.pattern);
     }
     {
-      var glob = new Glob(r"\?");
+      var glob = Glob(r"\?");
       var path = "?";
       var result = glob.match(path);
       expect(result, true, reason: glob.pattern);
     }
     {
-      var glob = new Glob(r"\[");
+      var glob = Glob(r"\[");
       var path = "[";
       var result = glob.match(path);
       expect(result, true, reason: glob.pattern);
     }
     {
-      var glob = new Glob(r"\{");
+      var glob = Glob(r"\{");
       var path = "{";
       var result = glob.match(path);
       expect(result, true, reason: glob.pattern);
@@ -220,13 +220,13 @@ void _testEscape() {
 void _testExtension() {
   test("Extension", () {
     {
-      var glob = new Glob("*.h");
+      var glob = Glob("*.h");
       var path = "stdio.h";
       var result = glob.match(path);
       expect(result, true, reason: glob.pattern);
     }
     {
-      var glob = new Glob("foo/a*.b*.*xt");
+      var glob = Glob("foo/a*.b*.*xt");
       var path = "foo/abc.baz.txt";
       var result = glob.match(path);
       expect(result, true, reason: glob.pattern);
@@ -237,13 +237,13 @@ void _testExtension() {
 void _testMetachars() {
   test("Metachars", () {
     {
-      var glob = new Glob("(");
+      var glob = Glob("(");
       var path = "(";
       var result = glob.match(path);
       expect(result, true, reason: glob.pattern);
     }
     {
-      var glob = new Glob("\s");
+      var glob = Glob("\s");
       var path = "s";
       var result = glob.match(path);
       expect(result, true, reason: glob.pattern);

@@ -1,14 +1,10 @@
 part of globbing;
 
 class Glob implements Pattern {
-  /**
-   * True, if the pattern is case sensitive; otherwise false.
-   */
+  /// True, if the pattern is case sensitive; otherwise false.
   final bool caseSensitive;
 
-  /**
-   * Pattern for this glob.
-   */
+  /// Pattern for this glob.
   final String pattern;
 
   bool _crossesDirectory;
@@ -19,67 +15,55 @@ class Glob implements Pattern {
 
   List<GlobSegment> _segments;
 
-  /**
-   * Creates the glob.
-   *
-   * Parameters:
-   *  [pattern]
-   *   Pattern for this glob.
-   *  [caseSensitive]
-   *   True, if the pattern is case sensitive; otherwise false.
-   */
-  Glob(this.pattern, {this.caseSensitive: true}) {
+  /// Creates the glob.
+  ///
+  /// Parameters:
+  ///  [pattern]
+  ///   Pattern for this glob.
+  ///  [caseSensitive]
+  ///   True, if the pattern is case sensitive; otherwise false.
+  Glob(this.pattern, {this.caseSensitive = true}) {
     if (pattern == null) {
-      throw new ArgumentError("pattern: $pattern");
+      throw ArgumentError("pattern: $pattern");
     }
 
     if (caseSensitive == null) {
-      throw new ArgumentError("caseSensitive: $caseSensitive");
+      throw ArgumentError("caseSensitive: $caseSensitive");
     }
 
     _compile(caseSensitive);
   }
 
-  /**
-   * Returns true if the glob [pattern] constains the segments that crosses
-   * the directoty.
-   */
+  /// Returns true if the glob [pattern] constains the segments that crosses
+  /// the directoty.
   bool get crossesDirectory => _crossesDirectory;
 
-  /**
-   * Returns true if glob [pattern] is an absolute path; otherwise false;   *
-   */
+  /// Returns true if glob [pattern] is an absolute path; otherwise false;   *
   bool get isAbsolute => _isAbsolute;
 
-  /**
-   * Returns the glob segments.
-   */
+  /// Returns the glob segments.
   List<GlobSegment> get segments => _segments;
 
   Iterable<Match> allMatches(String str, [int start = 0]) {
     return _expression.allMatches(str, start);
   }
 
-  /**
-   * Returns true if pattern matches thes string.
-   */
+  /// Returns true if pattern matches thes string.
   bool match(String string) {
-    return !allMatches(string).isEmpty;
+    return allMatches(string).isNotEmpty;
   }
 
   Match matchAsPrefix(String string, [int start = 0]) {
     return _expression.matchAsPrefix(string, start);
   }
 
-  /**
-   * Returns the string representation.
-   */
+  /// Returns the string representation.
   String toString() {
     return pattern;
   }
 
   void _compile(bool caseSensitive) {
-    var compiler = new _GlobCompiler();
+    var compiler = _GlobCompiler();
     var result = compiler.compile(pattern, caseSensitive: caseSensitive);
     _crossesDirectory = result.crossesDirectory;
     _expression = result.expression;
@@ -91,48 +75,40 @@ class Glob implements Pattern {
 class GlobSegment implements Pattern {
   Pattern _expression;
 
-  /**
-   * True if the segment crosses the directory.
-   */
+  /// True if the segment crosses the directory.
   final bool crossesDirectory;
 
-  /**
-   * True if segment should match only directory.
-   */
+  /// True if segment should match only directory.
   final bool onlyDirectory;
 
-  /**
-   * Original glob pattern.
-   */
+  /// Original glob pattern.
   final String pattern;
 
-  /**
-   * True if the segment pattern contains no wildcards '*', '?', no character
-   * classes '[]', no choices '{}'; otherwise false;
-   * false.
-   */
+  /// True if the segment pattern contains no wildcards '*', '?', no character
+  /// classes '[]', no choices '{}'; otherwise false;
+  /// false.
   final bool strict;
 
   GlobSegment(this.pattern, Pattern expression,
       {this.crossesDirectory, this.onlyDirectory, this.strict}) {
     if (pattern == null) {
-      throw new ArgumentError("pattern: $pattern");
+      throw ArgumentError("pattern: $pattern");
     }
 
     if (expression == null) {
-      throw new ArgumentError("expression: $expression");
+      throw ArgumentError("expression: $expression");
     }
 
     if (crossesDirectory == null) {
-      throw new ArgumentError("crossing: $crossesDirectory");
+      throw ArgumentError("crossing: $crossesDirectory");
     }
 
     if (strict == null) {
-      throw new ArgumentError("strict: $strict");
+      throw ArgumentError("strict: $strict");
     }
 
     if (onlyDirectory == null) {
-      throw new ArgumentError("trailingSlash: $onlyDirectory");
+      throw ArgumentError("trailingSlash: $onlyDirectory");
     }
 
     _expression = expression;
@@ -142,20 +118,16 @@ class GlobSegment implements Pattern {
     return _expression.allMatches(str, start);
   }
 
-  /**
-   * Returns true if pattern matches thes string.
-   */
+  /// Returns true if pattern matches thes string.
   bool match(String string) {
-    return !allMatches(string).isEmpty;
+    return allMatches(string).isNotEmpty;
   }
 
   Match matchAsPrefix(String string, [int start = 0]) {
     return _expression.matchAsPrefix(string, start);
   }
 
-  /**
-   * Returns the string representation.
-   */
+  /// Returns the string representation.
   String toString() {
     return pattern;
   }
@@ -185,13 +157,13 @@ class _GlobCompiler {
 
   StringBuffer _segmentBuffer;
 
-  _GlobCompilerResult compile(String input, {bool caseSensitive: true}) {
+  _GlobCompilerResult compile(String input, {bool caseSensitive = true}) {
     if (input == null) {
-      throw new ArgumentError("input: $input");
+      throw ArgumentError("input: $input");
     }
 
     if (caseSensitive == null) {
-      throw new ArgumentError("caseSensitive: $caseSensitive");
+      throw ArgumentError("caseSensitive: $caseSensitive");
     }
 
     _caseSensitive = caseSensitive;
@@ -201,13 +173,13 @@ class _GlobCompiler {
 
   _GlobCompilerResult _compile() {
     _reset();
-    var parser = new GlobParser();
+    var parser = GlobParser();
     var node = parser.parse(_input);
     var segments = _compileSegments(node.nodes);
-    var result = new _GlobCompilerResult();
+    var result = _GlobCompilerResult();
     result.crossesDirectory = node.crossesDirectory;
     result.expression =
-        new RegExp(_globalBuffer.toString(), caseSensitive: _caseSensitive);
+        RegExp(_globalBuffer.toString(), caseSensitive: _caseSensitive);
     result.isAbsolute = node.isAbsolute;
     result.segments = segments;
     return result;
@@ -508,12 +480,12 @@ class _GlobCompiler {
 
     _segmentBuffer.write("\$");
     var pattern = _segmentBuffer.toString();
-    var expression = new RegExp(pattern, caseSensitive: _caseSensitive);
+    var expression = RegExp(pattern, caseSensitive: _caseSensitive);
     var crossesDirectory = node.crossesDirectory;
     var onlyDirector = node.onlyDirectory;
     var source = node.source;
     var strict = node.strict;
-    var segment = new GlobSegment(source, expression,
+    var segment = GlobSegment(source, expression,
         crossesDirectory: crossesDirectory,
         onlyDirectory: onlyDirector,
         strict: strict);
@@ -522,7 +494,7 @@ class _GlobCompiler {
 
   List<GlobSegment> _compileSegments(List<GlobNodeSegment> nodes) {
     _globalBuffer.write("^");
-    var segments = new List<GlobSegment>();
+    var segments = List<GlobSegment>();
     var length = nodes.length;
     for (var i = 0; i < length; i++) {
       var node = nodes[i];
@@ -532,7 +504,7 @@ class _GlobCompiler {
           segments.add(segment);
           break;
         default:
-          throw new StateError("Illegal node: '$node'.");
+          throw StateError("Illegal node: '$node'.");
           break;
       }
       if (i < length - 1) {
@@ -547,8 +519,7 @@ class _GlobCompiler {
   }
 
   void _error(String message, int position) {
-    throw new FormatException(
-        "(column: ${position + 1}), $message in '$_input'.");
+    throw FormatException("(column: ${position + 1}), $message in '$_input'.");
   }
 
   void _errorIllegalElement(GlobNode owner, GlobNode element) {
@@ -570,21 +541,21 @@ class _GlobCompiler {
     _error(message, position);
   }
 
-  String _lookup(String source, int position, int offset) {
-    var index = position + offset;
-    if (index < source.length) {
-      return source[index];
-    }
-
-    return "";
-  }
+  //String _lookup(String source, int position, int offset) {
+  //  var index = position + offset;
+  //  if (index < source.length) {
+  //    return source[index];
+  //  }
+  //
+  //  return "";
+  //}
 
   void _reset() {
-    _globalBuffer = new StringBuffer();
+    _globalBuffer = StringBuffer();
   }
 
   void _resetSegment() {
-    _segmentBuffer = new StringBuffer();
+    _segmentBuffer = StringBuffer();
     _segmentBuffer.write("^");
   }
 

@@ -1,4 +1,4 @@
-part of globbing.glob_lister;
+part of '../glob_lister.dart';
 
 class GlobLister {
   /// Pattern of this glob lister.
@@ -49,33 +49,33 @@ class GlobLister {
   ///   Function that lists the specified directory.
   GlobLister(this.pattern,
       {bool caseSensitive,
-      bool exists(String path),
+      bool Function(String path) exists,
       bool followLinks = true,
-      bool isDirectory(String path),
+      bool Function(String path) isDirectory,
       bool isWindows,
-      List<String> list(String path, bool followLinks)}) {
+      List<String> Function(String path, bool followLinks) list}) {
     if (pattern == null) {
-      throw ArgumentError("pattern: $pattern");
+      throw ArgumentError.notNull('pattern');
     }
 
     if (exists == null) {
-      throw ArgumentError("exists: $exists");
+      throw ArgumentError.notNull('exists');
     }
 
     if (followLinks == null) {
-      throw ArgumentError("followLinks: $followLinks");
+      throw ArgumentError.notNull('followLinks');
     }
 
     if (isDirectory == null) {
-      throw ArgumentError("isDirectory: $isDirectory");
+      throw ArgumentError.notNull('isDirectory');
     }
 
     if (isWindows == null) {
-      throw ArgumentError("isWindows: $isWindows");
+      throw ArgumentError.notNull('isWindows');
     }
 
     if (list == null) {
-      throw ArgumentError("list: $list");
+      throw ArgumentError.notNull('list');
     }
 
     if (caseSensitive == null) {
@@ -108,7 +108,7 @@ class GlobLister {
   ///   Directory wich will be listed.
   ///  [notify]
   ///   A function that is called whenever an item is added.
-  List<String> list(String directory, {void notify(String path)}) {
+  List<String> list(String directory, {void Function(String path) notify}) {
     _files = <String>[];
     if (!_isDirectory(directory)) {
       return _files;
@@ -129,7 +129,7 @@ class GlobLister {
       }
     }
 
-    var isAbsolute = _glob.isAbsolute;
+    final isAbsolute = _glob.isAbsolute;
     if (isAbsolute) {
       _offset = 0;
     } else {
@@ -162,17 +162,17 @@ class GlobLister {
 
   void _listAbsoluteWithCrossing(String path) {
     if (_isWindows) {
-      path = path.replaceAll("\\", "/");
+      path = path.replaceAll('\\', '/');
     }
 
-    var pathSegments = pathos.split(path);
+    final pathSegments = _path.split(path);
     var length = pathSegments.length;
     if (length > _segments.length) {
       length = _segments.length;
     }
 
     for (var i = 0; i < length; i++) {
-      var segment = _segments[i];
+      final segment = _segments[i];
       if (segment.crossesDirectory) {
         break;
       }
@@ -189,11 +189,11 @@ class GlobLister {
 
   void _listAbsoluteWithoutCrossing(String path) {
     if (_isWindows) {
-      path = path.replaceAll("\\", "/");
+      path = path.replaceAll('\\', '/');
     }
 
-    var pathSegments = pathos.split(path);
-    var length = pathSegments.length;
+    final pathSegments = _path.split(path);
+    final length = pathSegments.length;
     if (length > _segments.length) {
       return;
     }
@@ -201,9 +201,9 @@ class GlobLister {
     var index = 0;
     for (; index < length; index++) {
       var pathSegment = pathSegments[index];
-      var segment = _segments[index];
+      final segment = _segments[index];
       if (segment.onlyDirectory) {
-        pathSegment += "/";
+        pathSegment += '/';
       }
 
       if (!segment.match(pathSegment)) {
@@ -212,7 +212,7 @@ class GlobLister {
     }
 
     if (index == _segments.length) {
-      var segment = _segments[index - 1];
+      final segment = _segments[index - 1];
       var exists = false;
       if (segment.onlyDirectory) {
         exists = _isDirectory(path);
@@ -233,10 +233,10 @@ class GlobLister {
   }
 
   void _listAbsoluteWithoutCrossingStage2(String path, int level) {
-    var segment = _segments[level];
+    final segment = _segments[level];
     if (segment.strict && _useStrict) {
-      path = pathos.join(path, segment.pattern);
-      var dirExists = _isDirectory(path);
+      path = _path.join(path, segment.pattern);
+      final dirExists = _isDirectory(path);
       var exists = false;
       if (!dirExists) {
         exists = _exists(path);
@@ -248,7 +248,7 @@ class GlobLister {
 
       if (level == _segments.length - 1) {
         if (_isWindows) {
-          path = path.replaceAll("\\", "/");
+          path = path.replaceAll('\\', '/');
         }
 
         if (segment.onlyDirectory) {
@@ -269,14 +269,14 @@ class GlobLister {
       return;
     }
 
-    List<String> list = _list(path, _followLinks);
+    final list = _list(path, _followLinks);
     for (var entry in list) {
       var entryPath = entry;
       if (_isWindows) {
-        entryPath = entryPath.replaceAll("\\", "/");
+        entryPath = entryPath.replaceAll('\\', '/');
       }
 
-      var index = entryPath.lastIndexOf("/");
+      final index = entryPath.lastIndexOf('/');
       String part;
       if (index != -1) {
         part = entryPath.substring(index + 1);
@@ -284,10 +284,10 @@ class GlobLister {
         part = entryPath;
       }
 
-      bool isDirectory = _isDirectory(entry);
+      final isDirectory = _isDirectory(entry);
       if (segment.onlyDirectory) {
         if (isDirectory) {
-          part += "/";
+          part += '/';
         }
       }
 
@@ -314,11 +314,11 @@ class GlobLister {
   }
 
   void _listRecursive(String path) {
-    List<String> list = _list(path, _followLinks);
+    final list = _list(path, _followLinks);
     for (var entry in list) {
       var entryPath = entry;
       if (_isWindows) {
-        entryPath = entryPath.replaceAll("\\", "/");
+        entryPath = entryPath.replaceAll('\\', '/');
       }
 
       var relativePath = entryPath;
@@ -326,10 +326,10 @@ class GlobLister {
         relativePath = entryPath.substring(_offset + 1);
       }
 
-      bool isDirectory = _isDirectory(entry);
+      final isDirectory = _isDirectory(entry);
       if (_onlyDirectory) {
         if (isDirectory) {
-          relativePath += "/";
+          relativePath += '/';
           if (_glob.match(relativePath)) {
             _addFile(entryPath);
           }
@@ -347,10 +347,10 @@ class GlobLister {
   }
 
   void _listRelative(String path, int level) {
-    var segment = _segments[level];
+    final segment = _segments[level];
     if (segment.strict && _useStrict) {
-      path = pathos.join(path, segment.pattern);
-      bool dirExists = _isDirectory(path);
+      path = _path.join(path, segment.pattern);
+      final dirExists = _isDirectory(path);
       var exists = false;
       if (!dirExists) {
         exists = _exists(path);
@@ -362,7 +362,7 @@ class GlobLister {
 
       if (level == _segments.length - 1) {
         if (_isWindows) {
-          path = path.replaceAll("\\", "/");
+          path = path.replaceAll('\\', '/');
         }
 
         if (segment.onlyDirectory) {
@@ -377,8 +377,8 @@ class GlobLister {
       }
 
       if (dirExists) {
-        var index = level + 1;
-        var nextSegment = _segments[index];
+        final index = level + 1;
+        final nextSegment = _segments[index];
         if (!nextSegment.crossesDirectory) {
           _listRelative(path, index);
         } else {
@@ -389,14 +389,14 @@ class GlobLister {
       return;
     }
 
-    List<String> list = _list(path, _followLinks);
+    final list = _list(path, _followLinks);
     for (var entry in list) {
       var entryPath = entry;
       if (_isWindows) {
-        entryPath = entryPath.replaceAll("\\", "/");
+        entryPath = entryPath.replaceAll('\\', '/');
       }
 
-      var index = entryPath.lastIndexOf("/");
+      final index = entryPath.lastIndexOf('/');
       String part;
       if (index != -1) {
         part = entryPath.substring(index + 1);
@@ -404,10 +404,10 @@ class GlobLister {
         part = entryPath;
       }
 
-      bool isDirectory = _isDirectory(entry);
+      final isDirectory = _isDirectory(entry);
       if (segment.onlyDirectory) {
         if (isDirectory) {
-          part += "/";
+          part += '/';
         }
       }
 
@@ -428,8 +428,8 @@ class GlobLister {
       }
 
       if (isDirectory) {
-        var index = level + 1;
-        var nextSegment = _segments[index];
+        final index = level + 1;
+        final nextSegment = _segments[index];
         if (!nextSegment.crossesDirectory) {
           _listRelative(entry, index);
         } else {

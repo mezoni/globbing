@@ -1,4 +1,4 @@
-part of globbing.glob_filter;
+part of '../glob_filter.dart';
 
 class GlobFilter {
   /// Pattern for this glob filter.
@@ -24,17 +24,19 @@ class GlobFilter {
   ///  [isWindows]
   ///   True, if used the path in the Windows style; otherwise false.
   GlobFilter(this.pattern,
-      {bool caseSensitive, bool isDirectory(String path), bool isWindows}) {
+      {bool caseSensitive,
+      bool Function(String path) isDirectory,
+      bool isWindows}) {
     if (pattern == null) {
-      throw ArgumentError("pattern: $pattern");
+      throw ArgumentError.notNull('pattern');
     }
 
     if (isDirectory == null) {
-      throw ArgumentError("isDirectory: $isDirectory");
+      throw ArgumentError.notNull('isDirectory');
     }
 
     if (isWindows == null) {
-      throw ArgumentError("isWindows: $isWindows");
+      throw ArgumentError.notNull('isWindows');
     }
 
     if (caseSensitive == null) {
@@ -49,7 +51,7 @@ class GlobFilter {
     _isWindows = isWindows;
     _glob = Glob(pattern, caseSensitive: caseSensitive);
     _onlyDirectory = false;
-    var segments = _glob.segments;
+    final segments = _glob.segments;
     if (segments.isNotEmpty) {
       _onlyDirectory = segments.last.onlyDirectory;
     }
@@ -66,21 +68,21 @@ class GlobFilter {
   ///  [removed]
   ///   A function that is called whenever an item is removed.
   List<String> exclude(List<String> list,
-      {void added(String path), void removed(String path)}) {
+      {void Function(String path) added, void Function(String path) removed}) {
     if (list == null) {
-      throw ArgumentError("list: $list");
+      throw ArgumentError.notNull('list');
     }
 
-    var result = List<String>();
+    final result = <String>[];
     for (var element in list) {
       var path = element;
       if (_isWindows) {
-        path = path.replaceAll("\\", "/");
+        path = path.replaceAll('\\', '/');
       }
 
       if (_onlyDirectory) {
         if (_isDirectory(path)) {
-          path += "/";
+          path += '/';
         }
       }
 
@@ -110,21 +112,21 @@ class GlobFilter {
   ///  [removed]
   ///   A function that is called whenever an item is removed.
   List<String> include(List<String> list,
-      {void added(String path), void removed(String path)}) {
+      {void Function(String path) added, void Function(String path) removed}) {
     if (list == null) {
-      throw ArgumentError("list: $list");
+      throw ArgumentError.notNull('list');
     }
 
-    var result = List<String>();
+    final result = <String>[];
     for (var element in list) {
       var path = element;
       if (_isWindows) {
-        path = path.replaceAll("\\", "/");
+        path = path.replaceAll('\\', '/');
       }
 
       if (_onlyDirectory) {
         if (_isDirectory(path)) {
-          path += "/";
+          path += '/';
         }
       }
 

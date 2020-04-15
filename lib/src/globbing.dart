@@ -1,4 +1,4 @@
-part of globbing;
+part of '../globbing.dart';
 
 class Glob implements Pattern {
   /// True, if the pattern is case sensitive; otherwise false.
@@ -24,11 +24,11 @@ class Glob implements Pattern {
   ///   True, if the pattern is case sensitive; otherwise false.
   Glob(this.pattern, {this.caseSensitive = true}) {
     if (pattern == null) {
-      throw ArgumentError("pattern: $pattern");
+      throw ArgumentError.notNull('pattern');
     }
 
     if (caseSensitive == null) {
-      throw ArgumentError("caseSensitive: $caseSensitive");
+      throw ArgumentError.notNull('caseSensitive');
     }
 
     _compile(caseSensitive);
@@ -44,6 +44,7 @@ class Glob implements Pattern {
   /// Returns the glob segments.
   List<GlobSegment> get segments => _segments;
 
+  @override
   Iterable<Match> allMatches(String str, [int start = 0]) {
     return _expression.allMatches(str, start);
   }
@@ -53,18 +54,20 @@ class Glob implements Pattern {
     return allMatches(string).isNotEmpty;
   }
 
+  @override
   Match matchAsPrefix(String string, [int start = 0]) {
     return _expression.matchAsPrefix(string, start);
   }
 
   /// Returns the string representation.
+  @override
   String toString() {
     return pattern;
   }
 
   void _compile(bool caseSensitive) {
-    var compiler = _GlobCompiler();
-    var result = compiler.compile(pattern, caseSensitive: caseSensitive);
+    final compiler = _GlobCompiler();
+    final result = compiler.compile(pattern, caseSensitive: caseSensitive);
     _crossesDirectory = result.crossesDirectory;
     _expression = result.expression;
     _isAbsolute = result.isAbsolute;
@@ -92,28 +95,29 @@ class GlobSegment implements Pattern {
   GlobSegment(this.pattern, Pattern expression,
       {this.crossesDirectory, this.onlyDirectory, this.strict}) {
     if (pattern == null) {
-      throw ArgumentError("pattern: $pattern");
+      throw ArgumentError.notNull('pattern');
     }
 
     if (expression == null) {
-      throw ArgumentError("expression: $expression");
+      throw ArgumentError.notNull('expression');
     }
 
     if (crossesDirectory == null) {
-      throw ArgumentError("crossing: $crossesDirectory");
+      throw ArgumentError.notNull('crossesDirectory');
     }
 
     if (strict == null) {
-      throw ArgumentError("strict: $strict");
+      throw ArgumentError.notNull('strict');
     }
 
     if (onlyDirectory == null) {
-      throw ArgumentError("trailingSlash: $onlyDirectory");
+      throw ArgumentError.notNull('onlyDirectory');
     }
 
     _expression = expression;
   }
 
+  @override
   Iterable<Match> allMatches(String str, [int start = 0]) {
     return _expression.allMatches(str, start);
   }
@@ -123,11 +127,13 @@ class GlobSegment implements Pattern {
     return allMatches(string).isNotEmpty;
   }
 
+  @override
   Match matchAsPrefix(String string, [int start = 0]) {
     return _expression.matchAsPrefix(string, start);
   }
 
   /// Returns the string representation.
+  @override
   String toString() {
     return pattern;
   }
@@ -135,19 +141,19 @@ class GlobSegment implements Pattern {
 
 class _GlobCompiler {
   static const String _MESSAGE_CANNOT_ESCAPE_SLASH_CHARACTER =
-      "Cannot escape slash '/' character";
+      'Cannot escape slash \'/\' character';
 
   static const String _MESSAGE_RANGE_OUT_OF_ORDER_IN_CHARACTER_CLASS =
-      "Range out of order in character class";
+      'Range out of order in character class';
 
   static const String _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS =
-      "Explicit slash '/' not allowed in character class";
+      'Explicit slash \'/\' not allowed in character class';
 
   static const String _MESSAGE_UNTERMINATED_BACKSLASH_SEQUENCE =
-      "Unterminated backslash '\\' escape sequence";
+      'Unterminated backslash \'\\\' escape sequence';
 
   static const String _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS =
-      "Unexpected end of character class";
+      'Unexpected end of character class';
 
   bool _caseSensitive;
 
@@ -159,11 +165,11 @@ class _GlobCompiler {
 
   _GlobCompilerResult compile(String input, {bool caseSensitive = true}) {
     if (input == null) {
-      throw ArgumentError("input: $input");
+      throw ArgumentError.notNull('input');
     }
 
     if (caseSensitive == null) {
-      throw ArgumentError("caseSensitive: $caseSensitive");
+      throw ArgumentError.notNull('caseSensitive');
     }
 
     _caseSensitive = caseSensitive;
@@ -173,10 +179,10 @@ class _GlobCompiler {
 
   _GlobCompilerResult _compile() {
     _reset();
-    var parser = GlobParser();
-    var node = parser.parse(_input);
-    var segments = _compileSegments(node.nodes);
-    var result = _GlobCompilerResult();
+    final parser = GlobParser();
+    final node = parser.parse(_input);
+    final segments = _compileSegments(node.nodes);
+    final result = _GlobCompilerResult();
     result.crossesDirectory = node.crossesDirectory;
     result.expression =
         RegExp(_globalBuffer.toString(), caseSensitive: _caseSensitive);
@@ -187,26 +193,26 @@ class _GlobCompiler {
 
   void _compileAsterisk(GlobNodeAsterisk node, bool first) {
     if (first) {
-      _write("(?![.])");
+      _write('(?![.])');
     }
 
-    _write("[^/]*");
+    _write('[^/]*');
   }
 
   void _compileAsterisks(GlobNodeAsterisks node, bool first) {
     if (first) {
-      _write("(?![.])");
+      _write('(?![.])');
     }
 
-    _write(".*");
+    _write('.*');
   }
 
   void _compileBrace(GlobNodeBrace node, bool first) {
-    _write("(?:");
-    var nodes = node.nodes;
-    var length = nodes.length;
+    _write('(?:');
+    final nodes = node.nodes;
+    final length = nodes.length;
     for (var i = 0; i < length; i++) {
-      var element = nodes[i];
+      final element = nodes[i];
       switch (element.type) {
         case GlobNodeTypes.ASTERISK:
           _compileAsterisk(element as GlobNodeAsterisk, first);
@@ -232,44 +238,44 @@ class _GlobCompiler {
 
       first = false;
       if (i < length - 1) {
-        _write("|");
+        _write('|');
       }
     }
 
-    _write(")");
+    _write(')');
   }
 
   void _compileCharacterClass(GlobNodeCharacterClass node) {
-    var ch = "";
-    var source = node.source;
-    var length = source.length;
+    var ch = '';
+    final source = node.source;
+    final length = source.length;
     var position = 0;
-    var escapeCharacter = () {
+    final escapeCharacter = () {
       switch (ch) {
-        case "/":
-          var message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS;
+        case '/':
+          final message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS;
           _error(message, node.position + position);
           break;
-        case "\\":
+        case '\\':
           if (position >= length) {
-            var message = _MESSAGE_UNTERMINATED_BACKSLASH_SEQUENCE;
+            final message = _MESSAGE_UNTERMINATED_BACKSLASH_SEQUENCE;
             _error(message, node.position + position);
           }
 
           ch = source[position++];
           switch (ch) {
-            case "/":
-              var message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS;
+            case '/':
+              final message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS;
               _error(message, node.position + position);
               break;
             default:
-              _write("\\");
+              _write('\\');
               _write(ch);
               break;
           }
 
           break;
-        case "^":
+        case '^':
           _write(ch);
           break;
         default:
@@ -277,11 +283,11 @@ class _GlobCompiler {
           break;
       }
 
-      var result = ch.codeUnitAt(0);
+      final result = ch.codeUnitAt(0);
       if (position < length) {
         ch = source[position++];
       } else {
-        ch = "";
+        ch = '';
       }
 
       return result;
@@ -291,80 +297,81 @@ class _GlobCompiler {
       ch = source[position++];
     }
 
-    if (ch != "[") {
-      _errorIllegalStartOrEndCharacter(node.type, "starts", "[", 0);
+    if (ch != '[') {
+      _errorIllegalStartOrEndCharacter(node.type, 'starts', '[', 0);
     }
 
-    _write("[");
+    _write('[');
     ch = source[position++];
-    if (ch == "!") {
-      _write("^");
+    if (ch == '!') {
+      _write('^');
       if (position < length) {
         ch = source[position++];
       } else {
-        var message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
+        final message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
         _error(message, node.position + position);
       }
     }
 
-    if (ch == "]") {
-      _write("\\]-\\]'");
+    if (ch == ']') {
+      _write('\\]-\\]\'');
       if (position < length) {
         ch = source[position++];
       } else {
-        var message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
+        final message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
         _error(message, node.position + position);
       }
     }
 
     var stop = false;
     while (true) {
-      if (ch == "") {
-        _errorIllegalStartOrEndCharacter(node.type, "ends", "]", 0);
+      if (ch == '') {
+        _errorIllegalStartOrEndCharacter(node.type, 'ends', ']', 0);
       }
 
       switch (ch) {
-        case "/":
-          var message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS;
+        case '/':
+          final message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS;
           _error(message, node.position + 1 + position);
           break;
-        case "]":
+        case ']':
           if (position != length) {
-            _errorIllegalStartOrEndCharacter(node.type, "ends", "]", 0);
+            _errorIllegalStartOrEndCharacter(node.type, 'ends', ']', 0);
           }
 
           stop = true;
           break;
         default:
-          if (ch == "-") {
+          if (ch == '-') {
             if (position < length) {
-              if (source[position] == "]") {
-                ch = "]";
+              if (source[position] == ']') {
+                ch = ']';
                 position++;
-                _write("-");
+                _write('-');
                 break;
               }
             }
           }
 
-          int start = escapeCharacter();
+          final start = escapeCharacter();
           var end = start;
           switch (ch) {
-            case "-":
+            case '-':
               if (position >= length) {
-                var message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
+                final message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
                 _error(message, node.position + position);
               }
 
               ch = source[position++];
-              if (ch == "]") {
+              if (ch == ']') {
                 position -= 2;
                 ch = source[position];
               } else {
-                _write("-");
+                _write('-');
                 end = escapeCharacter();
                 if (start > end) {
-                  var message = _MESSAGE_RANGE_OUT_OF_ORDER_IN_CHARACTER_CLASS;
+                  final message =
+                      _MESSAGE_RANGE_OUT_OF_ORDER_IN_CHARACTER_CLASS;
                   _error(message, position);
                 }
               }
@@ -378,12 +385,12 @@ class _GlobCompiler {
       }
     }
 
-    _write("]");
+    _write(']');
   }
 
   void _compileLiteral(GlobNodeLiteral node) {
-    var source = node.source;
-    var length = source.length;
+    final source = node.source;
+    final length = source.length;
     var position = 0;
     while (true) {
       if (position == length) {
@@ -392,28 +399,28 @@ class _GlobCompiler {
 
       var ch = source[position++];
       switch (ch) {
-        case "\\":
+        case '\\':
           if (position == length) {
-            var message = _MESSAGE_UNTERMINATED_BACKSLASH_SEQUENCE;
+            final message = _MESSAGE_UNTERMINATED_BACKSLASH_SEQUENCE;
             _error(message, node.position + position);
           }
 
           ch = source[position++];
           switch (ch) {
-            case "/":
-              var message = _MESSAGE_CANNOT_ESCAPE_SLASH_CHARACTER;
+            case '/':
+              final message = _MESSAGE_CANNOT_ESCAPE_SLASH_CHARACTER;
               _error(message, node.position + position);
               break;
-            case "*":
-            case "{":
-            case "[":
-            case "?":
-            case "}":
-              _write("\\");
+            case '*':
+            case '{':
+            case '[':
+            case '?':
+            case '}':
+              _write('\\');
               _write(ch);
               break;
-            case "\\":
-              _write("\\");
+            case '\\':
+              _write('\\');
               _write(ch);
               break;
             default:
@@ -421,20 +428,20 @@ class _GlobCompiler {
           }
 
           break;
-        case "\$":
-        case "(":
-        case ")":
-        case "*":
-        case "+":
-        case ".":
-        case "?":
-        case "[":
-        case "]":
-        case "^":
-        case "{":
-        case "|":
-        case "}":
-          _write("\\");
+        case '\$':
+        case '(':
+        case ')':
+        case '*':
+        case '+':
+        case '.':
+        case '?':
+        case '[':
+        case ']':
+        case '^':
+        case '{':
+        case '|':
+        case '}':
+          _write('\\');
           _write(ch);
           break;
         default:
@@ -445,13 +452,13 @@ class _GlobCompiler {
   }
 
   void _compileQuestion(GlobNodeQuestion node) {
-    _write(".");
+    _write('.');
   }
 
   GlobSegment _compileSegment(GlobNodeSegment node) {
     _resetSegment();
     var first = true;
-    for (var element in node.nodes) {
+    for (final element in node.nodes) {
       switch (element.type) {
         case GlobNodeTypes.ASTERISK:
           _compileAsterisk(element as GlobNodeAsterisk, first);
@@ -478,14 +485,14 @@ class _GlobCompiler {
       first = false;
     }
 
-    _segmentBuffer.write("\$");
-    var pattern = _segmentBuffer.toString();
-    var expression = RegExp(pattern, caseSensitive: _caseSensitive);
-    var crossesDirectory = node.crossesDirectory;
-    var onlyDirector = node.onlyDirectory;
-    var source = node.source;
-    var strict = node.strict;
-    var segment = GlobSegment(source, expression,
+    _segmentBuffer.write('\$');
+    final pattern = _segmentBuffer.toString();
+    final expression = RegExp(pattern, caseSensitive: _caseSensitive);
+    final crossesDirectory = node.crossesDirectory;
+    final onlyDirector = node.onlyDirectory;
+    final source = node.source;
+    final strict = node.strict;
+    final segment = GlobSegment(source, expression,
         crossesDirectory: crossesDirectory,
         onlyDirectory: onlyDirector,
         strict: strict);
@@ -493,61 +500,63 @@ class _GlobCompiler {
   }
 
   List<GlobSegment> _compileSegments(List<GlobNodeSegment> nodes) {
-    _globalBuffer.write("^");
-    var segments = List<GlobSegment>();
-    var length = nodes.length;
+    _globalBuffer.write('^');
+    final segments = <GlobSegment>[];
+    final length = nodes.length;
     for (var i = 0; i < length; i++) {
-      var node = nodes[i];
+      final node = nodes[i];
       switch (node.type) {
         case GlobNodeTypes.SEGMENT:
-          var segment = _compileSegment(node);
+          final segment = _compileSegment(node);
           segments.add(segment);
           break;
         default:
-          throw StateError("Illegal node: '$node'.");
+          throw StateError('Illegal node: \'$node\'.');
           break;
       }
       if (i < length - 1) {
         if (!node.isRoot) {
-          _globalBuffer.write("/");
+          _globalBuffer.write('/');
         }
       }
     }
 
-    _globalBuffer.write("\$");
+    _globalBuffer.write('\$');
     return segments;
   }
 
   void _error(String message, int position) {
-    throw FormatException("(column: ${position + 1}), $message in '$_input'.");
+    throw FormatException(
+        '(column: ${position + 1}), $message in \'$_input\'.');
   }
 
   void _errorIllegalElement(GlobNode owner, GlobNode element) {
     var position = owner.position;
-    var elementType = "<null>";
+    var elementType = '<null>';
     if (element != null) {
       elementType = element.type.toString();
       position = element.position;
     }
 
-    var ownerType = owner.type;
-    var message = "Illegal element '$elementType' in $ownerType node '$owner'";
+    final ownerType = owner.type;
+    final message =
+        'Illegal element \'$elementType\' in $ownerType node \'$owner\'';
     _error(message, position);
   }
 
   void _errorIllegalStartOrEndCharacter(
       GlobNodeTypes type, String should, String ch, int position) {
-    var message = "'$type' should $should with '$ch'";
+    final message = '\'$type\' should $should with \'$ch\'';
     _error(message, position);
   }
 
   //String _lookup(String source, int position, int offset) {
-  //  var index = position + offset;
+  //  final index = position + offset;
   //  if (index < source.length) {
   //    return source[index];
   //  }
   //
-  //  return "";
+  //  return '';
   //}
 
   void _reset() {
@@ -556,7 +565,7 @@ class _GlobCompiler {
 
   void _resetSegment() {
     _segmentBuffer = StringBuffer();
-    _segmentBuffer.write("^");
+    _segmentBuffer.write('^');
   }
 
   void _write(String string) {

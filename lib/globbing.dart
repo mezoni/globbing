@@ -1,5 +1,3 @@
-library globbing;
+import 'glob_parser.dart';
 
-import "package:globbing/glob_parser.dart";
-
-part "src/globbing.dart";
+part 'src/globbing.dart';

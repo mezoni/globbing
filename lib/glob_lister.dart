@@ -1,6 +1,5 @@
-library globbing.glob_lister;
+import 'package:path/path.dart' as _path;
 
-import "package:globbing/globbing.dart";
-import "package:path/path.dart" as pathos;
+import 'globbing.dart';
 
-part "src/glob_lister.dart";
+part 'src/glob_lister.dart';

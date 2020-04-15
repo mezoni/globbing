@@ -1,5 +1,3 @@
-library globbing.glob_filter;
+import 'globbing.dart';
 
-import "package:globbing/globbing.dart";
-
-part "src/glob_filter.dart";
+part 'src/glob_filter.dart';

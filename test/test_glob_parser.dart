@@ -1,5 +1,5 @@
-import "package:globbing/glob_parser.dart";
-import "package:test/test.dart";
+import 'package:globbing/glob_parser.dart';
+import 'package:test/test.dart';
 
 void main() {
   _testAsterisk();
@@ -14,82 +14,83 @@ void main() {
 }
 
 void _testAsterisk() {
-  test("Asterisk", () {
+  test('Asterisk', () {
     {
-      var pattern = "*";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result = segments.nodes.first.nodes.first is GlobNodeAsterisk;
+      final pattern = '*';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result = segments.nodes.first.nodes.first is GlobNodeAsterisk;
       expect(result, true);
       // source
-      var result2 = segments.nodes.first.nodes.first.source;
+      final result2 = segments.nodes.first.nodes.first.source;
       expect(result2, pattern);
     }
     {
-      var pattern = "**";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result = segments.nodes.first.nodes.first is GlobNodeAsterisk;
+      final pattern = '**';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result = segments.nodes.first.nodes.first is GlobNodeAsterisk;
       expect(result, false);
     }
   });
 }
 
 void _testAsterisks() {
-  test("Asterisks", () {
+  test('Asterisks', () {
     {
-      var pattern = "*";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result = segments.nodes.first.nodes.first is GlobNodeAsterisks;
+      final pattern = '*';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result = segments.nodes.first.nodes.first is GlobNodeAsterisks;
       expect(result, false);
     }
     {
-      var pattern = "**";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result1 = segments.nodes.first.nodes.first is GlobNodeAsterisks;
+      final pattern = '**';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result1 = segments.nodes.first.nodes.first is GlobNodeAsterisks;
       expect(result1, true);
       // source
-      var result2 = segments.nodes.first.nodes.first.source;
+      final result2 = segments.nodes.first.nodes.first.source;
       expect(result2, pattern);
     }
   });
 }
 
 void _testBrace() {
-  test("Brace", () {
+  test('Brace', () {
     {
-      var pattern = "{a,[0]}";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result1 = segments.nodes.first.nodes.first is GlobNodeBrace;
+      final pattern = '{a,[0]}';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result1 = segments.nodes.first.nodes.first is GlobNodeBrace;
       expect(result1, true);
-      var result2 = (segments.nodes.first.nodes.first as GlobNodeBrace)
+      final result2 = (segments.nodes.first.nodes.first as GlobNodeBrace)
           .nodes
           .first is GlobNodeLiteral;
       expect(result2, true);
-      var result3 = (segments.nodes.first.nodes.first as GlobNodeBrace)
+      final result3 = (segments.nodes.first.nodes.first as GlobNodeBrace)
           .nodes
           .last is GlobNodeCharacterClass;
       expect(result3, true);
-      var result4 = segments.nodes.first.nodes.first.source;
+      final result4 = segments.nodes.first.nodes.first.source;
       expect(result4, pattern);
     }
   });
 }
 
 void _testCharacterClass() {
-  test("CharacterClass", () {
+  test('CharacterClass', () {
     {
-      var pattern = r"[0-9a-zA-Z\n]";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result1 = segments.nodes.first.nodes.first is GlobNodeCharacterClass;
+      final pattern = r'[0-9a-zA-Z\n]';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result1 =
+          segments.nodes.first.nodes.first is GlobNodeCharacterClass;
       expect(result1, true);
-      var result2 = segments.nodes.first.nodes.first.source;
+      final result2 = segments.nodes.first.nodes.first.source;
       expect(result2, pattern);
-      var result3 =
+      final result3 =
           (segments.nodes.first.nodes.first as GlobNodeCharacterClass).source;
       expect(result3, pattern);
     }
@@ -97,154 +98,154 @@ void _testCharacterClass() {
 }
 
 void _testCrossesDirectory() {
-  test("crossesDirectory", () {
+  test('crossesDirectory', () {
     {
-      var pattern = "**";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result = segments.crossesDirectory;
+      final pattern = '**';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result = segments.crossesDirectory;
       expect(result, true);
     }
     {
-      var pattern = "/**";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result = segments.crossesDirectory;
+      final pattern = '/**';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result = segments.crossesDirectory;
       expect(result, true);
     }
     {
-      var pattern = "*";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result = segments.crossesDirectory;
+      final pattern = '*';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result = segments.crossesDirectory;
       expect(result, false);
     }
     {
-      var pattern = "/*";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result = segments.crossesDirectory;
+      final pattern = '/*';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result = segments.crossesDirectory;
       expect(result, false);
     }
   });
 }
 
 void _testLiteral() {
-  test("Literal", () {
+  test('Literal', () {
     {
-      var pattern = "hello";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result1 = segments.nodes.first.nodes.first is GlobNodeLiteral;
+      final pattern = 'hello';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result1 = segments.nodes.first.nodes.first is GlobNodeLiteral;
       expect(result1, true);
-      var result2 = segments.nodes.first.nodes.first.source;
+      final result2 = segments.nodes.first.nodes.first.source;
       expect(result2, pattern);
     }
   });
 }
 
 void _testOnlyDirectory() {
-  test("OnlyDirectory", () {
+  test('OnlyDirectory', () {
     {
-      var pattern = "///";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result = segments.nodes.last.onlyDirectory;
+      final pattern = '///';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result = segments.nodes.last.onlyDirectory;
       expect(result, false);
     }
     {
-      var pattern = "c://";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result = segments.nodes.last.onlyDirectory;
+      final pattern = 'c://';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result = segments.nodes.last.onlyDirectory;
       expect(result, false);
     }
     {
-      var pattern = "a//";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result = segments.nodes.last.onlyDirectory;
+      final pattern = 'a//';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result = segments.nodes.last.onlyDirectory;
       expect(result, true);
     }
     {
-      var pattern = "a[0]//";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result = segments.nodes.last.onlyDirectory;
+      final pattern = 'a[0]//';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result = segments.nodes.last.onlyDirectory;
       expect(result, true);
     }
   });
 }
 
 void _testQuestion() {
-  test("Question", () {
+  test('Question', () {
     {
-      var pattern = "?";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result1 = segments.nodes.first.nodes.first is GlobNodeQuestion;
+      final pattern = '?';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result1 = segments.nodes.first.nodes.first is GlobNodeQuestion;
       expect(result1, true);
-      var result2 = segments.nodes.first.nodes.first.source;
+      final result2 = segments.nodes.first.nodes.first.source;
       expect(result2, pattern);
     }
   });
 }
 
 void _testSegments() {
-  test("Segments", () {
+  test('Segments', () {
     {
-      var pattern = "*?hello";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result = segments.nodes.first.source;
+      final pattern = '*?hello';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result = segments.nodes.first.source;
       expect(result, pattern);
     }
     {
-      var pattern = "a/b";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result1 = segments.nodes.length;
+      final pattern = 'a/b';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result1 = segments.nodes.length;
       expect(result1, 2);
-      var result2 = segments.nodes.first.source;
-      expect(result2, "a");
-      var result3 = segments.nodes.last.source;
-      expect(result3, "b");
+      final result2 = segments.nodes.first.source;
+      expect(result2, 'a');
+      final result3 = segments.nodes.last.source;
+      expect(result3, 'b');
     }
     {
-      var pattern = "a/b/";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result1 = segments.nodes.length;
+      final pattern = 'a/b/';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result1 = segments.nodes.length;
       expect(result1, 2);
-      var result2 = segments.nodes.first.source;
-      expect(result2, "a");
-      var result3 = segments.nodes.first.isRoot;
+      final result2 = segments.nodes.first.source;
+      expect(result2, 'a');
+      final result3 = segments.nodes.first.isRoot;
       expect(result3, false);
-      var result4 = segments.nodes.last.source;
-      expect(result4, "b/");
+      final result4 = segments.nodes.last.source;
+      expect(result4, 'b/');
     }
     {
-      var pattern = "/a/b";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result1 = segments.nodes.length;
+      final pattern = '/a/b';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result1 = segments.nodes.length;
       expect(result1, 3);
-      var result2 = segments.nodes.first.source;
-      expect(result2, "/");
-      var result3 = segments.nodes.first.isRoot;
+      final result2 = segments.nodes.first.source;
+      expect(result2, '/');
+      final result3 = segments.nodes.first.isRoot;
       expect(result3, true);
-      var result4 = segments.nodes.last.source;
-      expect(result4, "b");
+      final result4 = segments.nodes.last.source;
+      expect(result4, 'b');
     }
     {
-      var pattern = "//";
-      var parser = GlobParser();
-      var segments = parser.parse(pattern);
-      var result1 = segments.nodes.length;
+      final pattern = '//';
+      final parser = GlobParser();
+      final segments = parser.parse(pattern);
+      final result1 = segments.nodes.length;
       expect(result1, 1);
-      var result2 = segments.nodes.first.source;
-      expect(result2, "/");
-      var result3 = segments.nodes.first.isRoot;
+      final result2 = segments.nodes.first.source;
+      expect(result2, '/');
+      final result3 = segments.nodes.first.isRoot;
       expect(result3, true);
     }
   });

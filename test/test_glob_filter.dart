@@ -19,9 +19,9 @@ GlobLister _getLister(String pattern) {
     return FileStat.statSync(path).type == FileSystemEntityType.directory;
   };
 
-  final list = (String path, bool followLinks) {
+  final list = (String path, bool? followLinks) {
     return Directory(path)
-        .listSync(followLinks: followLinks)
+        .listSync(followLinks: followLinks!)
         .map((e) => e.path)
         .toList();
   };

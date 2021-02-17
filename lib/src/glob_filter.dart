@@ -4,13 +4,13 @@ class GlobFilter {
   /// Pattern for this glob filter.
   final String pattern;
 
-  Glob _glob;
+  late Glob _glob;
 
-  bool Function(String) _isDirectory;
+  late bool Function(String) _isDirectory;
 
-  bool _isWindows;
+  late bool _isWindows;
 
-  bool _onlyDirectory;
+  bool? _onlyDirectory;
 
   /// Creates new glob filter.
   ///
@@ -24,13 +24,9 @@ class GlobFilter {
   ///  [isWindows]
   ///   True, if used the path in the Windows style; otherwise false.
   GlobFilter(this.pattern,
-      {bool caseSensitive,
-      bool Function(String path) isDirectory,
-      bool isWindows}) {
-    if (pattern == null) {
-      throw ArgumentError.notNull('pattern');
-    }
-
+      {bool? caseSensitive,
+      bool Function(String path)? isDirectory,
+      bool? isWindows}) {
     if (isDirectory == null) {
       throw ArgumentError.notNull('isDirectory');
     }
@@ -51,7 +47,7 @@ class GlobFilter {
     _isWindows = isWindows;
     _glob = Glob(pattern, caseSensitive: caseSensitive);
     _onlyDirectory = false;
-    final segments = _glob.segments;
+    final segments = _glob.segments!;
     if (segments.isNotEmpty) {
       _onlyDirectory = segments.last.onlyDirectory;
     }
@@ -67,8 +63,9 @@ class GlobFilter {
   ///   A function that is called whenever an item is added.
   ///  [removed]
   ///   A function that is called whenever an item is removed.
-  List<String> exclude(List<String> list,
-      {void Function(String path) added, void Function(String path) removed}) {
+  List<String> exclude(List<String>? list,
+      {void Function(String path)? added,
+      void Function(String path)? removed}) {
     if (list == null) {
       throw ArgumentError.notNull('list');
     }
@@ -80,7 +77,7 @@ class GlobFilter {
         path = path.replaceAll('\\', '/');
       }
 
-      if (_onlyDirectory) {
+      if (_onlyDirectory!) {
         if (_isDirectory(path)) {
           path += '/';
         }
@@ -111,8 +108,9 @@ class GlobFilter {
   ///   A function that is called whenever an item is added.
   ///  [removed]
   ///   A function that is called whenever an item is removed.
-  List<String> include(List<String> list,
-      {void Function(String path) added, void Function(String path) removed}) {
+  List<String> include(List<String>? list,
+      {void Function(String path)? added,
+      void Function(String path)? removed}) {
     if (list == null) {
       throw ArgumentError.notNull('list');
     }
@@ -124,7 +122,7 @@ class GlobFilter {
         path = path.replaceAll('\\', '/');
       }
 
-      if (_onlyDirectory) {
+      if (_onlyDirectory!) {
         if (_isDirectory(path)) {
           path += '/';
         }

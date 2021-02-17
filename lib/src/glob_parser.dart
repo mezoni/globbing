@@ -2,10 +2,10 @@ part of '../glob_parser.dart';
 
 abstract class GlobNode {
   /// Text source of this node;
-  final String source;
+  final String? source;
 
   /// Start position of this node in the source.
-  final int position;
+  final int? position;
 
   GlobNode(this.source, this.position) {
     if (source == null) {
@@ -18,10 +18,10 @@ abstract class GlobNode {
   }
 
   /// Returns true if node crosses directory; otherwise false.
-  bool get crossesDirectory;
+  bool? get crossesDirectory;
 
   /// Returns true if node is strict; otherwise false.
-  bool get strict;
+  bool? get strict;
 
   /// Returns type of this node.
   GlobNodeTypes get type;
@@ -29,12 +29,12 @@ abstract class GlobNode {
   /// Returns srting representation.
   @override
   String toString() {
-    return source;
+    return source!;
   }
 }
 
 class GlobNodeAsterisk extends GlobNode {
-  GlobNodeAsterisk(String source, int position) : super(source, position);
+  GlobNodeAsterisk(String source, int? position) : super(source, position);
 
   /// Returns true if node crosses directory; otherwise false.
   @override
@@ -50,7 +50,7 @@ class GlobNodeAsterisk extends GlobNode {
 }
 
 class GlobNodeAsterisks extends GlobNode {
-  GlobNodeAsterisks(String source, int position) : super(source, position);
+  GlobNodeAsterisks(String source, int? position) : super(source, position);
 
   /// Returns true if node crosses directory; otherwise false.
   @override
@@ -66,9 +66,9 @@ class GlobNodeAsterisks extends GlobNode {
 }
 
 class GlobNodeBrace extends GlobNodeCollection {
-  GlobNodeBrace(String source, int position, List<GlobNode> nodes)
+  GlobNodeBrace(String source, int? position, List<GlobNode> nodes)
       : super(source, position, nodes) {
-    if (_nodes.length < 2) {
+    if (_nodes!.length < 2) {
       throw ArgumentError(
           'The number of elements in the list of nodes must be at least 2');
     }
@@ -84,11 +84,9 @@ class GlobNodeBrace extends GlobNodeCollection {
 }
 
 class GlobNodeCharacterClass extends GlobNode {
-  GlobNodeCharacterClass(String source, int position)
+  GlobNodeCharacterClass(String source, int? position)
       : super(source, position) {
-    if (source == null) {
-      throw ArgumentError.notNull('source');
-    }
+
 
     if (source.length < 3) {
       throw ArgumentError('source: $source');
@@ -113,13 +111,13 @@ class GlobNodeCharacterClass extends GlobNode {
 }
 
 abstract class GlobNodeCollection<T extends GlobNode> extends GlobNode {
-  bool _crossesDirectory;
+  bool? _crossesDirectory;
 
-  List<T> _nodes;
+  List<T>? _nodes;
 
-  bool _strict;
+  bool? _strict;
 
-  GlobNodeCollection(String source, int position, List<T> nodes)
+  GlobNodeCollection(String? source, int? position, List<T>? nodes)
       : super(source, position) {
     if (nodes == null) {
       throw ArgumentError.notNull('nodes');
@@ -140,11 +138,11 @@ abstract class GlobNodeCollection<T extends GlobNode> extends GlobNode {
 
   /// Returns true if node crosses directory; otherwise false.
   @override
-  bool get crossesDirectory {
+  bool? get crossesDirectory {
     if (_crossesDirectory == null) {
       _crossesDirectory = false;
-      for (final node in _nodes) {
-        if (node.crossesDirectory) {
+      for (final node in _nodes!) {
+        if (node.crossesDirectory!) {
           _crossesDirectory = true;
           break;
         }
@@ -155,15 +153,15 @@ abstract class GlobNodeCollection<T extends GlobNode> extends GlobNode {
   }
 
   /// Returns elements of this node.
-  List<T> get nodes => UnmodifiableListView<T>(_nodes);
+  List<T> get nodes => UnmodifiableListView<T>(_nodes!);
 
   /// Returns true if node is strict; otherwise false.
   @override
-  bool get strict {
+  bool? get strict {
     if (_strict == null) {
       _strict = true;
-      for (final node in _nodes) {
-        if (!node.strict) {
+      for (final node in _nodes!) {
+        if (!node.strict!) {
           _strict = false;
           break;
         }
@@ -175,7 +173,7 @@ abstract class GlobNodeCollection<T extends GlobNode> extends GlobNode {
 }
 
 class GlobNodeLiteral extends GlobNode {
-  GlobNodeLiteral(String source, int position) : super(source, position);
+  GlobNodeLiteral(String source, int? position) : super(source, position);
 
   /// Returns true if node crosses directory; otherwise false.
   @override
@@ -207,12 +205,12 @@ class GlobNodeQuestion extends GlobNode {
 }
 
 class GlobNodeSegment extends GlobNodeCollection {
-  bool _isRoot;
+  bool? _isRoot;
 
-  bool _onlyDirectory;
+  bool? _onlyDirectory;
 
   GlobNodeSegment(
-      String source, int position, bool isRoot, List<GlobNode> nodes)
+      String source, int? position, bool? isRoot, List<GlobNode>? nodes)
       : super(source, position, nodes) {
     if (isRoot == null) {
       throw ArgumentError.notNull('isRoot');
@@ -222,16 +220,16 @@ class GlobNodeSegment extends GlobNodeCollection {
   }
 
   /// Returns true if node if is a root segment; otherwise false.
-  bool get isRoot => _isRoot;
+  bool? get isRoot => _isRoot;
 
   /// Returns true if node matches only directory; otherwise false.
-  bool get onlyDirectory {
+  bool? get onlyDirectory {
     if (_onlyDirectory == null) {
       _onlyDirectory = false;
-      if (!_isRoot) {
-        final last = _nodes.last;
+      if (!_isRoot!) {
+        final last = _nodes!.last;
         if (last is GlobNodeLiteral) {
-          _onlyDirectory = last.source.endsWith('/');
+          _onlyDirectory = last.source!.endsWith('/');
         }
       }
     }
@@ -244,24 +242,24 @@ class GlobNodeSegment extends GlobNodeCollection {
 }
 
 class GlobNodeSegments extends GlobNodeCollection<GlobNodeSegment> {
-  bool _isAbsolute;
+  bool? _isAbsolute;
 
   @override
-  List<GlobNodeSegment> _nodes;
+  List<GlobNodeSegment>? _nodes;
 
-  GlobNodeSegments(String source, int position, List<GlobNodeSegment> nodes)
+  GlobNodeSegments(String? source, int position, List<GlobNodeSegment>? nodes)
       : super(source, position, nodes);
 
   /// Returns true if node if is an absolute path; otherwise false.
-  bool get isAbsolute {
-    _isAbsolute ??= _nodes.first.isRoot;
+  bool? get isAbsolute {
+    _isAbsolute ??= _nodes!.first.isRoot;
     return _isAbsolute;
   }
 
   /// Returns the elements of this node.
   @override
   List<GlobNodeSegment> get nodes =>
-      UnmodifiableListView<GlobNodeSegment>(_nodes);
+      UnmodifiableListView<GlobNodeSegment>(_nodes!);
 
   /// Returns the type of this node.
   @override
@@ -317,25 +315,25 @@ class GlobParser {
   static const String _MESSAGE_UNEXPECTED_END_OF_BRACE =
       'Unexpected end of brace';
 
-  String _ch;
+  String? _ch;
 
-  String _input;
+  String? _input;
 
-  bool _insideChoice;
+  bool? _insideChoice;
 
-  bool _isRoot;
+  bool? _isRoot;
 
-  int _length;
+  int _length = 0;
 
-  int _position;
+  int _position = 0;
 
-  List<GlobNode> _rules;
+  List<GlobNode>? _rules;
 
-  List<GlobNodeSegment> _segments;
+  List<GlobNodeSegment>? _segments;
 
-  int _segmentStart;
+  int? _segmentStart;
 
-  GlobNodeSegments parse(String input) {
+  GlobNodeSegments parse(String? input) {
     if (input == null) {
       throw ArgumentError('input');
     }
@@ -367,7 +365,7 @@ class GlobParser {
 
   GlobNodeSegment _createSegment() {
     final start = _position;
-    var source = _input.substring(_segmentStart, _position);
+    var source = _input!.substring(_segmentStart!, _position);
     var trailingSlash = false;
     if (_ch == '/') {
       while (true) {
@@ -377,21 +375,21 @@ class GlobParser {
         }
       }
 
-      if (_ch == _EOF && !_isRoot) {
+      if (_ch == _EOF && !_isRoot!) {
         trailingSlash = true;
       }
     }
 
     if (trailingSlash) {
       source += '/';
-      if (_rules.isNotEmpty) {
-        final last = _rules.last;
+      if (_rules!.isNotEmpty) {
+        final last = _rules!.last;
         if (last is GlobNodeLiteral) {
-          final rule = GlobNodeLiteral(last.source + '/', last.position);
-          _rules[_rules.length - 1] = rule;
+          final rule = GlobNodeLiteral(last.source! + '/', last.position);
+          _rules![_rules!.length - 1] = rule;
         } else {
           final rule = GlobNodeLiteral('/', start);
-          _rules.add(rule);
+          _rules!.add(rule);
         }
       }
     }
@@ -406,8 +404,8 @@ class GlobParser {
         '(column: ${position + 1}), $message in \'$_input\'.');
   }
 
-  int _escapeRangeCharacter() {
-    int charCode;
+  int? _escapeRangeCharacter() {
+    int? charCode;
     switch (_ch) {
       case _EOF:
         final message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
@@ -429,18 +427,18 @@ class GlobParser {
             _error(message, _position);
             break;
           default:
-            charCode = _ch.codeUnitAt(0);
+            charCode = _ch!.codeUnitAt(0);
             _nextChar();
             break;
         }
 
         break;
       case '^':
-        charCode = _ch.codeUnitAt(0);
+        charCode = _ch!.codeUnitAt(0);
         _nextChar();
         break;
       default:
-        charCode = _ch.codeUnitAt(0);
+        charCode = _ch!.codeUnitAt(0);
         _nextChar();
         break;
     }
@@ -449,22 +447,22 @@ class GlobParser {
   }
 
   String _lookup(int offset) {
-    final position = _position + offset;
+    final position = _position+ offset;
     if (position < _length) {
-      return _input[position];
+      return _input![position];
     }
 
     return _EOF;
   }
 
-  String _nextChar() {
-    if (_position + 1 >= _length) {
+  String? _nextChar() {
+    if (_position+ 1 >= _length) {
       _ch = _EOF;
       _position = _length;
       return _EOF;
     }
 
-    _ch = _input[++_position];
+    _ch = _input![++_position];
     return _ch;
   }
 
@@ -476,20 +474,20 @@ class GlobParser {
         _nextChar();
         _isRoot = true;
         final rule = GlobNodeLiteral('/', 0);
-        _rules.add(rule);
+        _rules!.add(rule);
         final segment = _createSegment();
-        _segments.add(segment);
+        _segments!.add(segment);
         break;
       default:
-        if (_alpha(_ch) && _lookup(1) == ':' && _lookup(2) == '/') {
+        if (_alpha(_ch!) && _lookup(1) == ':' && _lookup(2) == '/') {
           _isRoot = true;
           _position += 2;
           _nextChar();
-          final source = _input.substring(0, 3);
+          final source = _input!.substring(0, 3);
           final rule = GlobNodeLiteral(source, 0);
-          _rules.add(rule);
+          _rules!.add(rule);
           final segment = _createSegment();
-          _segments.add(segment);
+          _segments!.add(segment);
         }
 
         break;
@@ -502,7 +500,7 @@ class GlobParser {
 
   GlobNodeBrace _parseBrace() {
     final start = _position;
-    final index = _rules.length;
+    final index = _rules!.length;
     _nextChar();
     var empty = true;
     final insideChoice = _insideChoice;
@@ -523,7 +521,7 @@ class GlobParser {
           if (_ch == '}') {
             _nextChar();
             final literal = GlobNodeLiteral('', _position);
-            _rules.add(literal);
+            _rules!.add(literal);
             stop = true;
           }
 
@@ -549,10 +547,10 @@ class GlobParser {
     }
 
     _insideChoice = insideChoice;
-    _rules.sublist(index, _rules.length);
-    final rules = _rules.sublist(index, _rules.length);
-    _rules.length = index;
-    final source = _input.substring(start, _position);
+    _rules!.sublist(index, _rules!.length);
+    final rules = _rules!.sublist(index, _rules!.length);
+    _rules!.length = index;
+    final source = _input!.substring(start, _position);
     return GlobNodeBrace(source, start, rules);
   }
 
@@ -576,7 +574,7 @@ class GlobParser {
         break;
     }
 
-    _rules.add(rule);
+    _rules!.add(rule);
   }
 
   GlobNodeCharacterClass _parseCharacterClass() {
@@ -616,7 +614,7 @@ class GlobParser {
       }
     }
 
-    final source = _input.substring(start, _position);
+    final source = _input!.substring(start, _position);
     return GlobNodeCharacterClass(source, start);
   }
 
@@ -635,7 +633,7 @@ class GlobParser {
           stop = true;
           break;
         case ',':
-          if (_insideChoice) {
+          if (_insideChoice!) {
             stop = true;
           } else {
             _nextChar();
@@ -688,13 +686,13 @@ class GlobParser {
       }
     }
 
-    final source = _input.substring(start, _position);
+    final source = _input!.substring(start, _position);
     return GlobNodeLiteral(source, start);
   }
 
   GlobNodeQuestion _parseQuestion() {
     _nextChar();
-    return GlobNodeQuestion('?', _position - 1);
+    return GlobNodeQuestion('?', _position- 1);
   }
 
   void _parseRange() {
@@ -720,7 +718,7 @@ class GlobParser {
         } else {
           final position = _position;
           end = _escapeRangeCharacter();
-          if (start > end) {
+          if (start! > end!) {
             final message = _MESSAGE_RANGE_OUT_OF_ORDER_IN_CHARACTER_CLASS;
             _error(message, position);
           }
@@ -732,7 +730,7 @@ class GlobParser {
 
   void _parseSegment() {
     while (true) {
-      GlobNode rule;
+      GlobNode? rule;
       switch (_ch) {
         case _EOF:
         case '/':
@@ -755,7 +753,7 @@ class GlobParser {
       }
 
       if (rule != null) {
-        _rules.add(rule);
+        _rules!.add(rule);
       } else {
         break;
       }
@@ -767,7 +765,7 @@ class GlobParser {
     while (true) {
       _parseSegment();
       final segment = _createSegment();
-      _segments.add(segment);
+      _segments!.add(segment);
       switch (_ch) {
         case _EOF:
           stop = true;
@@ -798,7 +796,7 @@ class GlobParser {
         break;
     }
 
-    final source = _input.substring(start, _position);
+    final source = _input!.substring(start, _position);
     if (crossesDirectory) {
       return GlobNodeAsterisks(source, start);
     } else {
@@ -808,11 +806,11 @@ class GlobParser {
 
   void _reset() {
     _insideChoice = false;
-    _length = _input.length;
+    _length = _input!.length;
     _position = 0;
     _segments = <GlobNodeSegment>[];
-    if (_position < _length) {
-      _ch = _input[_position];
+    if (_position< _length) {
+      _ch = _input![_position];
     } else {
       _position = _length;
       _ch = _EOF;

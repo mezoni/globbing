@@ -7,13 +7,13 @@ class Glob implements Pattern {
   /// Pattern for this glob.
   final String pattern;
 
-  bool _crossesDirectory;
+  bool? _crossesDirectory;
 
-  Pattern _expression;
+  Pattern? _expression;
 
-  bool _isAbsolute;
+  bool? _isAbsolute;
 
-  List<GlobSegment> _segments;
+  List<GlobSegment>? _segments;
 
   /// Creates the glob.
   ///
@@ -23,30 +23,22 @@ class Glob implements Pattern {
   ///  [caseSensitive]
   ///   True, if the pattern is case sensitive; otherwise false.
   Glob(this.pattern, {this.caseSensitive = true}) {
-    if (pattern == null) {
-      throw ArgumentError.notNull('pattern');
-    }
-
-    if (caseSensitive == null) {
-      throw ArgumentError.notNull('caseSensitive');
-    }
-
     _compile(caseSensitive);
   }
 
   /// Returns true if the glob [pattern] constains the segments that crosses
   /// the directoty.
-  bool get crossesDirectory => _crossesDirectory;
+  bool? get crossesDirectory => _crossesDirectory;
 
   /// Returns true if glob [pattern] is an absolute path; otherwise false;   *
-  bool get isAbsolute => _isAbsolute;
+  bool? get isAbsolute => _isAbsolute;
 
   /// Returns the glob segments.
-  List<GlobSegment> get segments => _segments;
+  List<GlobSegment>? get segments => _segments;
 
   @override
   Iterable<Match> allMatches(String str, [int start = 0]) {
-    return _expression.allMatches(str, start);
+    return _expression!.allMatches(str, start);
   }
 
   /// Returns true if pattern matches thes string.
@@ -55,8 +47,8 @@ class Glob implements Pattern {
   }
 
   @override
-  Match matchAsPrefix(String string, [int start = 0]) {
-    return _expression.matchAsPrefix(string, start);
+  Match? matchAsPrefix(String string, [int start = 0]) {
+    return _expression!.matchAsPrefix(string, start);
   }
 
   /// Returns the string representation.
@@ -76,30 +68,26 @@ class Glob implements Pattern {
 }
 
 class GlobSegment implements Pattern {
-  Pattern _expression;
+  late Pattern _expression;
 
   /// True if the segment crosses the directory.
-  final bool crossesDirectory;
+  final bool? crossesDirectory;
 
   /// True if segment should match only directory.
-  final bool onlyDirectory;
+  final bool? onlyDirectory;
 
   /// Original glob pattern.
-  final String pattern;
+  final String? pattern;
 
   /// True if the segment pattern contains no wildcards '*', '?', no character
   /// classes '[]', no choices '{}'; otherwise false;
   /// false.
-  final bool strict;
+  final bool? strict;
 
   GlobSegment(this.pattern, Pattern expression,
       {this.crossesDirectory, this.onlyDirectory, this.strict}) {
     if (pattern == null) {
       throw ArgumentError.notNull('pattern');
-    }
-
-    if (expression == null) {
-      throw ArgumentError.notNull('expression');
     }
 
     if (crossesDirectory == null) {
@@ -128,14 +116,14 @@ class GlobSegment implements Pattern {
   }
 
   @override
-  Match matchAsPrefix(String string, [int start = 0]) {
+  Match? matchAsPrefix(String string, [int start = 0]) {
     return _expression.matchAsPrefix(string, start);
   }
 
   /// Returns the string representation.
   @override
   String toString() {
-    return pattern;
+    return pattern!;
   }
 }
 
@@ -155,23 +143,15 @@ class _GlobCompiler {
   static const String _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS =
       'Unexpected end of character class';
 
-  bool _caseSensitive;
+  late bool _caseSensitive;
 
-  StringBuffer _globalBuffer;
+  late StringBuffer _globalBuffer;
 
-  String _input;
+  String? _input;
 
-  StringBuffer _segmentBuffer;
+  late StringBuffer _segmentBuffer;
 
   _GlobCompilerResult compile(String input, {bool caseSensitive = true}) {
-    if (input == null) {
-      throw ArgumentError.notNull('input');
-    }
-
-    if (caseSensitive == null) {
-      throw ArgumentError.notNull('caseSensitive');
-    }
-
     _caseSensitive = caseSensitive;
     _input = input;
     return _compile();
@@ -247,26 +227,26 @@ class _GlobCompiler {
 
   void _compileCharacterClass(GlobNodeCharacterClass node) {
     var ch = '';
-    final source = node.source;
+    final source = node.source!;
     final length = source.length;
     var position = 0;
     final escapeCharacter = () {
       switch (ch) {
         case '/':
           final message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS;
-          _error(message, node.position + position);
+          _error(message, node.position! + position);
           break;
         case '\\':
           if (position >= length) {
             final message = _MESSAGE_UNTERMINATED_BACKSLASH_SEQUENCE;
-            _error(message, node.position + position);
+            _error(message, node.position! + position);
           }
 
           ch = source[position++];
           switch (ch) {
             case '/':
               final message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS;
-              _error(message, node.position + position);
+              _error(message, node.position! + position);
               break;
             default:
               _write('\\');
@@ -309,7 +289,7 @@ class _GlobCompiler {
         ch = source[position++];
       } else {
         final message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
-        _error(message, node.position + position);
+        _error(message, node.position! + position);
       }
     }
 
@@ -319,7 +299,7 @@ class _GlobCompiler {
         ch = source[position++];
       } else {
         final message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
-        _error(message, node.position + position);
+        _error(message, node.position! + position);
       }
     }
 
@@ -332,7 +312,7 @@ class _GlobCompiler {
       switch (ch) {
         case '/':
           final message = _MESSAGE_SLASH_NOT_ALLOWED_IN_CHARACTER_CLASS;
-          _error(message, node.position + 1 + position);
+          _error(message, node.position! + 1 + position);
           break;
         case ']':
           if (position != length) {
@@ -359,7 +339,7 @@ class _GlobCompiler {
             case '-':
               if (position >= length) {
                 final message = _MESSAGE_UNEXPECTED_END_OF_CHARACTER_CLASS;
-                _error(message, node.position + position);
+                _error(message, node.position! + position);
               }
 
               ch = source[position++];
@@ -389,7 +369,7 @@ class _GlobCompiler {
   }
 
   void _compileLiteral(GlobNodeLiteral node) {
-    final source = node.source;
+    final source = node.source!;
     final length = source.length;
     var position = 0;
     while (true) {
@@ -402,14 +382,14 @@ class _GlobCompiler {
         case '\\':
           if (position == length) {
             final message = _MESSAGE_UNTERMINATED_BACKSLASH_SEQUENCE;
-            _error(message, node.position + position);
+            _error(message, node.position! + position);
           }
 
           ch = source[position++];
           switch (ch) {
             case '/':
               final message = _MESSAGE_CANNOT_ESCAPE_SLASH_CHARACTER;
-              _error(message, node.position + position);
+              _error(message, node.position! + position);
               break;
             case '*':
             case '{':
@@ -512,10 +492,9 @@ class _GlobCompiler {
           break;
         default:
           throw StateError('Illegal node: \'$node\'.');
-          break;
       }
       if (i < length - 1) {
-        if (!node.isRoot) {
+        if (!node.isRoot!) {
           _globalBuffer.write('/');
         }
       }
@@ -532,16 +511,13 @@ class _GlobCompiler {
 
   void _errorIllegalElement(GlobNode owner, GlobNode element) {
     var position = owner.position;
-    var elementType = '<null>';
-    if (element != null) {
-      elementType = element.type.toString();
-      position = element.position;
-    }
+    final elementType = element.type.toString();
+    position = element.position;
 
     final ownerType = owner.type;
     final message =
         'Illegal element \'$elementType\' in $ownerType node \'$owner\'';
-    _error(message, position);
+    _error(message, position!);
   }
 
   void _errorIllegalStartOrEndCharacter(
@@ -575,11 +551,11 @@ class _GlobCompiler {
 }
 
 class _GlobCompilerResult {
-  bool isAbsolute;
+  bool? isAbsolute;
 
-  bool crossesDirectory;
+  bool? crossesDirectory;
 
-  Pattern expression;
+  Pattern? expression;
 
-  List<GlobSegment> segments;
+  List<GlobSegment>? segments;
 }
